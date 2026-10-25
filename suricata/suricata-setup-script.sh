@@ -51,7 +51,7 @@ else
 fi
 
 # "basic setup"/configuration
-echo "What is your Raspberry Pi's IP address?"
-read pi_ip
-echo "You said: $pi_ip"
+#echo "What is your Raspberry Pi's IP address?"
+#read pi_ip
+#echo "You said: $pi_ip"
 # sudo sed ''/etc/suricata/suricata.yaml
