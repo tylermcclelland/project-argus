@@ -31,8 +31,8 @@ else
 		echo "Failed to run PCAP file... Exit code: $tmp_exit_code"
 	else
 		echo "The PCAP file was successfully run!"
-		alerts=$(tail -n 2 project-argus/suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
-		alert_number=$(grep -o "Alerts: [0-9]\+" <<< "$alerts")
+		# alerts=$(tail -n 2 project-argus/suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
+		alert_number=$(grep -o "Alerts: [0-9]\+" project-argus/suricata/test-pcap-files/temp-log-storage/suricata.log | tail -n 1)
 		echo "The number of alerts triggered:"
 		echo "    $alert_number"
 		echo "For the full log, refer to suricata.log"
