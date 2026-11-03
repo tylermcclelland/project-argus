@@ -57,45 +57,46 @@ echo -e "\nStarting basic configuration...\n"
 
 # determine users desired interface (this may just be temporary? maybe we want to be running an instance of Suricata on eth0 and wlan0? for now let them choose)
 echo "Which interface are you wanting to use Suricata on?"
-echo "WiFi: 0"
-echo "Ethernet: 1"
+echo "Type: \"WiFi\" or \"Ethernet\""
 read usr_interface_selection
-
-#add a loop here
-if [[ $usr_interface_selection == "WiFi" || $usr_interface_selection == "Ethernet" ]]; then
-	echo "Okay, starting setup on $usr_interface_selection..."
-else
-	echo "You said: $usr_interface_selection. This is not a valid option."
-	echo "You must type \"WiFi\" or \"Ethernet\". Trying again..."
-fi
-
+tmp_bool=0
+until [ $tmp_bool -eq 1 ]; do
+	if [[ $usr_interface_selection == "WiFi" || $usr_interface_selection == "Ethernet" ]]; then
+		echo "Okay, starting setup on $usr_interface_selection..."
+		tmp_bool=1
+	else
+		echo "You said: $usr_interface_selection. This is not a valid option."
+		echo "You must type \"WiFi\" or \"Ethernet\". Trying again..."
+	fi
+done
 #end loop here
 
 # awk added in future to get ip/network addr if users consent?
-echo "Do you allow us to search for your IP? [yes/no] "
-read usr_consent
-if [[ $usr_consent == "yes" ]]; then
-	echo "Searching for your IP..."
-	# sudo ifconfig | grep "wlan0"
-elif [[ $usr_consent == "no" ]]; then
-	temp_bool=0
-	until [ $tmp_bool -ne 1 ]; do
-		echo "Please provide your IP: "
-		read pi_ip
-		echo "You said $pi_ip. Is that right? [yes/no]"
-		read usr_consent
-		if [[ $usr_consent == "yes" ]]; then
-			temp_bool=1
-			echo "$pi_ip stored."
-			continue
-		elif [[ $usr_consent == "no" ]]; then
-			echo "Okay, lets try again..."
-		fi
-	done
-fi
+#TODO: dealing with a bug here rn. boolean not working as intended
+#echo "Do you allow us to search for your IP? [yes/no] "
+#read usr_consent
+#if [[ $usr_consent == "yes" ]]; then
+#	echo "Searching for your IP..."
+#	# sudo ifconfig | grep "wlan0"
+#elif [[ $usr_consent == "no" ]]; then
+#	temp_bool=0
+#	until [ $tmp_bool -eq 1 ]; do
+#		echo "Please provide your IP: "
+#		read pi_ip
+#		echo "You said $pi_ip. Is that right? [yes/no]"
+#		read usr_consent
+#		if [[ $usr_consent == "yes" ]]; then
+#			temp_bool=1
+#			echo "$pi_ip stored."
+#			continue
+#		elif [[ $usr_consent == "no" ]]; then
+#			echo "Okay, lets try again..."
+#		fi
+#	done
+#fi
 # testing on a fake yaml file
 read -p "What is your Raspberry Pi's IP address?: " pi_ip
-echo "You said: $pi_ip"
+echo "You said: $pi_ip" 
 target_string="HOME_NET:.*"
 replacement_string="HOME_NET: \"[$pi_ip/24]\""
 
