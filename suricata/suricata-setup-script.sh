@@ -55,8 +55,25 @@ fi
 
 echo -e "\nStarting basic configuration...\n"
 
-# awk added in future to get ip/network addr if users consent?
+# determine users desired interface (this may just be temporary? maybe we want to be running an instance of Suricata on eth0 and wlan0? for now let them choose)
+echo "Which interface are you wanting to use Suricata on?"
+echo "WiFi: 0"
+echo "Ethernet: 1"
+read usr_interface_selection
 
+#add a loop here
+if [ $usr_interface_selection == "WiFi" || $usr_interface_selection == "Ethernet" ]; then
+	echo "Okay, starting setup on $usr_interface_selection..."
+else
+	echo "You said: $usr_interface_selection. This is not a valid option."
+	echo "You must type \"WiFi\" or \"Ethernet\". Trying again..."
+#end loop here
+
+# awk added in future to get ip/network addr if users consent?
+read "Do you allow us to search for your IP? [yes/no] " usr_consent
+if [ $usr_consent == "yes" ]; then
+	echo "Searching for your IP..."
+	sudo ifconfig | grep "wlan0"
 # testing on a fake yaml file
 read -p "What is your Raspberry Pi's IP address?: " pi_ip
 echo "You said: $pi_ip"
