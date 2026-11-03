@@ -50,6 +50,31 @@ else
 
 fi
 
+# "basic setup"/configuration
+# the -i.bak flag should make a backup file before editing/changing the file
+
+echo -e "\nStarting basic configuration...\n"
+
+# awk added in future to get ip/network addr if users consent?
+
+# testing on a fake yaml file
+read -p "What is your Raspberry Pi's IP address?: " pi_ip
+echo "You said: $pi_ip"
+target_string="HOME_NET:.*"
+replacement_string="HOME_NET: \"[$pi_ip/24]\""
+
+# UPDATE TO REAL .YAML IN FUTURE :)
+sudo sed -i.bak "0,/$target_string/s|$target_string|$replacement_string|" suricata_mock.yaml
+tmp_exit_code=$?
+
+if [ $tmp_exit_code -gt 0 ]; then
+	echo "IP was unable to be updated. Exit code: $tmp_exit_code"
+	exit 1
+else
+	echo "IP address has been updated in suricata.yaml!"
+fi
+
+
 # See what configuration the user is wanting to use
 echo -e "\nWhat configuration type would you like to install?:"
 echo "1. Intrusion Detection System (IDS) - passive/offline setup"
@@ -68,8 +93,3 @@ else
 	echo -e "\nYou entered $setup_choice, which is not a valid answer."
 fi
 
-# "basic setup"/configuration
-#echo "What is your Raspberry Pi's IP address?"
-#read pi_ip
-#echo "You said: $pi_ip"
-# sudo sed ''/etc/suricata/suricata.yaml
