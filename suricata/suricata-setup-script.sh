@@ -50,6 +50,24 @@ else
 
 fi
 
+# See what configuration the user is wanting to use
+echo -e "\nWhat configuration type would you like to install?:"
+echo "1. Intrusion Detection System (IDS) - passive/offline setup"
+echo "2. Intrusion Prevention System (IPS) - active/online setup"
+read -p "Enter your choice (# or abbreviation): " setup_choice
+
+if [[ $setup_choice == 1 || $setup_choice == "IDS" ]]; then
+	echo -e "\nYou have chosen to setup IDS, or passive/offline testing."
+	echo "Starting IDS configuration..."
+	./project-argus/suricata/ids-setup-script.sh
+elif [[ $setup_choice == 2 || $setup_choice == "IPS" ]]; then
+	echo -e "\nYou have chosen to setup IPS, or active/online testing."
+	echo "Starting IPS configuraiton..."
+	./project-argus/suricata/ips-setup-script.sh
+else
+	echo -e "\nYou entered $setup_choice, which is not a valid answer."
+fi
+
 # "basic setup"/configuration
 #echo "What is your Raspberry Pi's IP address?"
 #read pi_ip
