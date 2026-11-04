@@ -73,30 +73,38 @@ done
 
 # awk added in future to get ip/network addr if users consent?
 #TODO: dealing with a bug here rn. boolean not working as intended
-#echo "Do you allow us to search for your IP? [yes/no] "
-#read usr_consent
-#if [[ $usr_consent == "yes" ]]; then
-#	echo "Searching for your IP..."
-#	# sudo ifconfig | grep "wlan0"
-#elif [[ $usr_consent == "no" ]]; then
-#	temp_bool=0
-#	until [ $tmp_bool -eq 1 ]; do
-#		echo "Please provide your IP: "
-#		read pi_ip
-#		echo "You said $pi_ip. Is that right? [yes/no]"
-#		read usr_consent
-#		if [[ $usr_consent == "yes" ]]; then
-#			temp_bool=1
-#			echo "$pi_ip stored."
-#			continue
-#		elif [[ $usr_consent == "no" ]]; then
-#			echo "Okay, lets try again..."
-#		fi
-#	done
-#fi
+read -p "Do you allow us to search for your IP? [yes/no] " usr_consent
+temp_bool=0
+until [ $tmp_bool -eq 1 ]; do
+	if [[ $usr_consent == "yes" ]]; then
+		tmp_bool=1 # to exit initial yes/no check
+		echo "Searching for your IP..."
+		# sudo ifconfig | grep "wlan0"
+	elif [[ $usr_consent == "no" ]]; then
+		tmp_bool=1 # to exit initial yes/no check
+		temp_bool_inner=0
+		until [ $tmp_bool_inner -eq 1 ]; do
+			read -p "Please provide your IP: " pi_ip
+			read -p "You said $pi_ip. Is that right? [yes/no]" usr_consent
+			if [[ $usr_consent == "yes" ]]; then
+				temp_bool_inner=1
+				echo "$pi_ip stored."
+				continue
+			elif [[ $usr_consent == "no" ]]; then
+				temp_bool_inner=0
+				echo "Okay, lets try again..."
+			fi
+		done
+	else
+		temp_bool=0 #probably not necessary, just ensuring loop functios properly
+		echo "You must type \"yes\" or \"no\". Try again..."
+	fi
+done
+
+# the -i.bak flag should make a backup file before editing/changing the file
 # testing on a fake yaml file
-read -p "What is your Raspberry Pi's IP address?: " pi_ip
-echo "You said: $pi_ip" 
+#read -p "What is your Raspberry Pi's IP address?: " pi_ip
+#echo "You said: $pi_ip" 
 target_string="HOME_NET:.*"
 replacement_string="HOME_NET: \"[$pi_ip/24]\""
 
