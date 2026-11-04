@@ -22,9 +22,6 @@ fi
 #actual Suricata install
 echo "Installing Suricata..."
 
-# used by debian package install in suricata docs, youtube video used 'sudo apt install suricata -y'
-# not sure if that matters, noting for potential debugging 
-# TODO: remove comment after verifying it doesn't matter
 sudo apt-get install suricata -y 
 tmp_exit_code=$?
 
@@ -34,7 +31,7 @@ else
     echo "Suricata was installed!"
     #show version 
     echo "Version: "
-    sudo suricata --build-info | head -n 1 #in my --build-info output, version was on line one so -n 1
+    sudo suricata --build-info | head -n 1 #in my --build-info output, version was on line one so -n 1 TODO: change this to a grep?
 
     #see if suricata is running
     echo "Seeing if suricata is running..."
@@ -56,11 +53,14 @@ fi
 echo -e "\nStarting basic configuration...\n"
 
 # determine users desired interface (this may just be temporary? maybe we want to be running an instance of Suricata on eth0 and wlan0? for now let them choose)
-echo "Which interface are you wanting to use Suricata on?"
-echo "Type: \"WiFi\" or \"Ethernet\""
-read usr_interface_selection
+#echo "Which interface are you wanting to use Suricata on?"
+#echo "Type: \"WiFi\" or \"Ethernet\""
+#read usr_interface_selection
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
+	echo "Which interface are you wanting to use Suricata on?"
+	echo "Type: \"WiFi\" or \"Ethernet\""
+	read usr_interface_selection
 	if [[ $usr_interface_selection == "WiFi" || $usr_interface_selection == "Ethernet" ]]; then
 		echo "Okay, starting setup on $usr_interface_selection..."
 		tmp_bool=1
@@ -72,39 +72,42 @@ done
 #end loop here
 
 # awk added in future to get ip/network addr if users consent?
-#TODO: dealing with a bug here rn. boolean not working as intended
-read -p "Do you allow us to search for your IP? [yes/no] " usr_consent
-temp_bool=0
+#TODO: Inital IP grab bug fixed, remove debug prints when done
+tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
+	read -p "Do you allow us to search for your IP? [yes/no] " usr_consent
 	if [[ $usr_consent == "yes" ]]; then
 		tmp_bool=1 # to exit initial yes/no check
 		echo "Searching for your IP..."
 		# sudo ifconfig | grep "wlan0"
+	#echo "HERE 1"
 	elif [[ $usr_consent == "no" ]]; then
+		#echo "HERE 2"
 		tmp_bool=1 # to exit initial yes/no check
-		temp_bool_inner=0
+		tmp_bool_inner=0
 		until [ $tmp_bool_inner -eq 1 ]; do
+			#echo "HERE 3"
 			read -p "Please provide your IP: " pi_ip
 			read -p "You said $pi_ip. Is that right? [yes/no]" usr_consent
 			if [[ $usr_consent == "yes" ]]; then
-				temp_bool_inner=1
-				echo "$pi_ip stored."
+				#echo "HERE 4"
+				tmp_bool_inner=1
+				echo "IP:$pi_ip stored."
 				continue
 			elif [[ $usr_consent == "no" ]]; then
-				temp_bool_inner=0
+				#echo "HERE 5"
+				tmp_bool_inner=0
 				echo "Okay, lets try again..."
 			fi
 		done
 	else
-		temp_bool=0 #probably not necessary, just ensuring loop functios properly
+		tmp_bool=0 #probably not necessary, just ensuring loop functios properly
 		echo "You must type \"yes\" or \"no\". Try again..."
 	fi
 done
 
 # the -i.bak flag should make a backup file before editing/changing the file
 # testing on a fake yaml file
-#read -p "What is your Raspberry Pi's IP address?: " pi_ip
-#echo "You said: $pi_ip" 
 target_string="HOME_NET:.*"
 replacement_string="HOME_NET: \"[$pi_ip/24]\""
 
