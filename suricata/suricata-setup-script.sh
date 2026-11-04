@@ -53,9 +53,7 @@ fi
 echo -e "\nStarting basic configuration...\n"
 
 # determine users desired interface (this may just be temporary? maybe we want to be running an instance of Suricata on eth0 and wlan0? for now let them choose)
-#echo "Which interface are you wanting to use Suricata on?"
-#echo "Type: \"WiFi\" or \"Ethernet\""
-#read usr_interface_selection
+
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
 	echo "Which interface are you wanting to use Suricata on?"
@@ -69,7 +67,6 @@ until [ $tmp_bool -eq 1 ]; do
 		echo "You must type \"WiFi\" or \"Ethernet\". Trying again..."
 	fi
 done
-#end loop here
 
 # awk added in future to get ip/network addr if users consent?
 #TODO: Inital IP grab bug fixed, remove debug prints when done
@@ -79,7 +76,31 @@ until [ $tmp_bool -eq 1 ]; do
 	if [[ $usr_consent == "yes" ]]; then
 		tmp_bool=1 # to exit initial yes/no check
 		echo "Searching for your IP..."
+
+		echo "Checking ifconfig installation"
+		sudo ifconfig --version #checking if user has ifconfig
+		tmp_exit_code=$?
+		if [ $tmp_exit_code -eq 0 ]; then
+			echo "ifconfig installation verified"
+		else
+			echo "ifconfig not found"
+			sudo apt install net-tools
+			tmp_exit_code=$?
+			if [ $tmp_exit_code -eq 0 ]; then
+				echo "net-tools installed! (ifconfig is contained within net-tools)"
+			else
+				echo "Unable to install ifconfig"
+			fi
+		fi
+		if [[ $usr_interface_selection == "WiFi" ]]; then
+			#implement wifi ip grab
+			echo "wlan0 ip grab not yet implemented..."
+		elif [[ $usr_interface_selection == "Ethernet" ]]; then
+			#implement eth0 ip grab
+			echo "eth0 ip grab not yet implemented..."
+		fi
 		# sudo ifconfig | grep "wlan0"
+
 	#echo "HERE 1"
 	elif [[ $usr_consent == "no" ]]; then
 		#echo "HERE 2"
@@ -108,6 +129,8 @@ done
 
 # the -i.bak flag should make a backup file before editing/changing the file
 # testing on a fake yaml file
+# NOTE: when testing this, be sure to say "no" when the above code asks if it can grab your ip, 
+# 		auto ip grab not yet implemented
 target_string="HOME_NET:.*"
 replacement_string="HOME_NET: \"[$pi_ip/24]\""
 
