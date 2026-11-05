@@ -52,6 +52,25 @@ fi
 
 echo -e "\nStarting basic configuration...\n"
 
+# Check if iptables installed, install if not and delete all NFQUEUE rules (if any) to avoid denying pkts
+
+if ! command -v iptables &> /dev/null; then
+	echo "iptables not installed...installing for future use."
+	sudo apt update && sudo apt install iptables
+	tmp_exit_code=$?
+	if [ $tmp_exit_code -gt 0 ]; then
+		echo -e "iptables had an issue installing... Exit code: $tmp_exit_code\n"
+	else
+		echo -e "iptables was successfully installed!\n"
+	fi
+else
+	# if already set installed, delete any rules that were set up
+	echo "iptables is already installed, deleting previous NFQUEUE rules..."
+	sudo iptables -F INPUT
+	sudo iptables -F OUTPUT
+	echo -e "All INPUT/OUTPUT rules have been flushed!\n"
+fi
+
 # determine users desired interface (this may just be temporary? maybe we want to be running an instance of Suricata on eth0 and wlan0? for now let them choose)
 
 tmp_bool=0
@@ -148,16 +167,31 @@ fi
 
 # See what configuration the user is wanting to use
 echo -e "\nWhat configuration type would you like to install?:"
-echo "1. Intrusion Detection System (IDS) - passive/offline setup"
-echo "2. Intrusion Prevention System (IPS) - active/online setup"
+echo "1. Intrusion Detection System (IDS)"
+echo "2. Intrusion Prevention System (IPS) - 'advanced' mode"
 read -p "Enter your choice (# or abbreviation): " setup_choice
 
 if [[ $setup_choice == 1 || $setup_choice == "IDS" ]]; then
-	echo -e "\nYou have chosen to setup IDS, or passive/offline testing."
+# Check if iptables installed, install if not and delete all NFQUEUE rules (if any) to avoid denying pkts
+
+if ! command -v iptables &> /dev/null; then
+        echo "iptables not installed...installing for future use."
+        sudo apt update && sudo apt install iptables
+        tmp_exit_code=$?
+        if [ $temp_exit_code -gt 0 ]; then
+                echo -e "iptables had an issue installing... Exit code: $tmp_exit_code\n"
+        else
+                echo -e "iptables was successfully installed!\n"
+        fi
+else
+        # if already set installed, delete any rules that were set up
+        sudo iptables -F INPUT
+        sudo iptables -F OUTPUT
+fi	echo -e "\nYou have chosen to setup Intrusion Detection System (IDS)."
 	echo "Starting IDS configuration..."
 	./project-argus/suricata/ids-setup-script.sh
 elif [[ $setup_choice == 2 || $setup_choice == "IPS" ]]; then
-	echo -e "\nYou have chosen to setup IPS, or active/online testing."
+	echo -e "\nYou have chosen to setup Intrustion Prevention System (IPS)."
 	echo "Starting IPS configuraiton..."
 	./project-argus/suricata/ips-setup-script.sh
 else
