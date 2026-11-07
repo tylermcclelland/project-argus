@@ -72,10 +72,11 @@ else
 fi
 
 # determine users desired interface (this may just be temporary? maybe we want to be running an instance of Suricata on eth0 and wlan0? for now let them choose)
-
+#NOTE: my pi says eth0 is down. should we go through the trouble of briging up the eth0 interface on a users machine if they
+# 	   don't have it set up? or just tell them "You haven't yet brought up the eth0 interface on your machine... WiFi instead?? [y/n]"
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
-	echo "Which interface are you wanting to use Suricata on?"
+	#TODO: quick fix, find out how to grab selection withou tbeing case sensitive
 	echo "Type: \"WiFi\" or \"Ethernet\""
 	read usr_interface_selection
 	if [[ $usr_interface_selection == "WiFi" || $usr_interface_selection == "Ethernet" ]]; then
@@ -90,33 +91,55 @@ done
 # awk added in future to get ip/network addr if users consent?
 #TODO: Inital IP grab bug fixed, remove debug prints when done
 tmp_bool=0
+ip_found=0
 until [ $tmp_bool -eq 1 ]; do
 	read -p "Do you allow us to search for your IP? [yes/no] " usr_consent
 	if [[ $usr_consent == "yes" ]]; then
 		tmp_bool=1 # to exit initial yes/no check
-		echo "Searching for your IP..."
+		echo "Starting search for your IP..."
 
-		echo "Checking ifconfig installation"
-		sudo ifconfig --version #checking if user has ifconfig
+		# apparently ifconfig is depricated, their manpage says to use "ip"... Leaving ifconfig setup/grab code just incase
+		# i have problems w "ip" TODO: remove ifconfig code if it's pointless
+
+		#echo "Checking ifconfig installation"
+		#sudo ifconfig --version #checking if user has ifconfig
+		echo "Checking ip installation"
+		sudo ip -V #checking if user has ip
 		tmp_exit_code=$?
 		if [ $tmp_exit_code -eq 0 ]; then
-			echo "ifconfig installation verified"
+			#echo "ifconfig installation verified"
+			echo "ip installation verified"
 		else
-			echo "ifconfig not found"
-			sudo apt install net-tools
+			#echo "ifconfig not found"
+			#sudo apt install net-tools
+			echo "ip (from iproute2) not found... Installing"
+			sudo apt install iproute2
 			tmp_exit_code=$?
 			if [ $tmp_exit_code -eq 0 ]; then
-				echo "net-tools installed! (ifconfig is contained within net-tools)"
+				#echo "net-tools installed! (ifconfig is contained within net-tools)"
+				echo "iproute2 installed! (ip tool is contained within iproute2)"
+				sudo ip -V
 			else
-				echo "Unable to install ifconfig"
+				#echo "Unable to install ifconfig"
+				echo "Unable to install ip :("
+				echo "You'll have to give your IP"
 			fi
 		fi
 		if [[ $usr_interface_selection == "WiFi" ]]; then
 			#implement wifi ip grab
-			echo "wlan0 ip grab not yet implemented..."
+			#echo "wlan0 ip grab not yet implemented..."
+			#wifi_ip=ifconfig | tail -n 7 | head -n 1 #kind of hacky but I think ifconfig consistently prints on the same line numbers for any ifconfig version that the user will likely have TODO: investigate a better way to grab ip
+			pi_ip=$(sudo ip addr show wlan0 | grep "inet" | cut -c 10-21)
+			echo "WiFi: $pi_ip"
+			
 		elif [[ $usr_interface_selection == "Ethernet" ]]; then
 			#implement eth0 ip grab
-			echo "eth0 ip grab not yet implemented..."
+			#echo "eth0 ip grab not yet implemented..."
+			#eth_ip=ifconfig | head -n 2 | tail -n 1
+			#eth_ip=
+			#echo "ETH: $eth_ip"
+			sudo ip addr show eth0
+			echo "Ethernet ip grab not yet implemented"
 		fi
 		# sudo ifconfig | grep "wlan0"
 
@@ -148,8 +171,7 @@ done
 
 # the -i.bak flag should make a backup file before editing/changing the file
 # testing on a fake yaml file
-# NOTE: when testing this, be sure to say "no" when the above code asks if it can grab your ip, 
-# 		auto ip grab not yet implemented
+
 target_string="HOME_NET:.*"
 replacement_string="HOME_NET: \"[$pi_ip/24]\""
 
