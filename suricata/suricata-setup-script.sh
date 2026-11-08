@@ -175,7 +175,7 @@ until [ $tmp_bool -eq 1 ]; do
 			#wifi_ip=ifconfig | tail -n 7 | head -n 1 #kind of hacky but I think ifconfig consistently prints on the same line numbers for any ifconfig version that the user will likely have TODO: investigate a better way to grab ip
 			pi_ip=$(sudo ip addr show wlan0 | grep "inet" | cut -c 10-21)
 			echo -e "WiFi: $pi_ip \n"
-			
+			sudo ip link set wlan0 promisc on
 		elif [[ $usr_interface_selection == "Ethernet" ]]; then
 			#implement eth0 ip grab
 			#echo "eth0 ip grab not yet implemented..."
@@ -230,6 +230,59 @@ else
 	echo "IP address has been updated in suricata.yaml!" #TODO: eventually (not necessary for the demo) we should probably put a check here for a valid IP such that I cant say my IP is "potato"
 fi
 
+# Make sure that the rules file is up to date/the correct file path
+current_rule_path=$(grep "default-rule-path" suricata_mock.yaml)
+echo -e "\nYour default rule path is currently set to: \n$current_rule_path"
+
+read -p "The default rules file is /etc/suricata/rules. Does this match your file location? [yes/no]: " rule_input
+
+if [[ $rule_input == "yes" ]]; then
+	echo "You entered 'yes', checking that the default-rule-path matches..."
+	# update to real file in future :)
+	if grep -q "default-rule-path: /etc/suricata/rules" suricata_mock.yaml; then
+		echo -e "Default rule path matches! Continuing setup...\n"
+	else
+		def_rule_path="default-rule-path:.*"
+		echo "You entered yes, but your default rule path currently set to:"
+		echo $def_rule_path
+		read -p "Would you like to update to the default? [yes/no]: " update_input
+		if [[ $update_input == "yes" ]]; then
+			update_rule_path="default-rule-path: /etc/suricata/rules"
+			sudo sed -i.bak "0,/$def_rule_path/s|$def_rule_path|$update_rule_path|" suricata_mock.yaml
+			echo "The rule path has been updated! Restarting Suricata to update rule path..."
+			sudo systemctl restart suricata
+			echo "Suricata has been restarted! Continuing setup..."
+		else
+			echo -e "You entered 'no', the rule path will not be updated. Continuing setup..."
+		fi
+	fi
+else
+	read -p "You entered 'no', would you like to update the file location [yes/no]: " file_update
+	if [[ $file_update == "yes" ]]; then
+		echo "You entered 'yes', updating default-rule-path..."
+		def_rule_path="default-rule-path:.*"
+		update_rule_path="default-rule-path: /etc/suricata/rules"
+                sudo sed -i.bak "0,/$def_rule_path/s|$def_rule_path|$update_rule_path|" suricata_mock.yaml
+		echo "Rule path has been succesfully updated! Restarting Suricata to update rule path..."
+		sudo systemctl restart suricata
+		echo "Suricata has been restarted! Continuing setup..."
+	else
+		echo "You entered 'no', the default-rule-path will not be updated. Continuing setup..."
+	fi
+fi
+
+# Update the Suricata rules before starting
+
+# get the rule path without hte beginning
+rule_path=$(grep -m 1 "default-rule-path:" suricata_mock.yaml | awk '{print $2}')
+echo -e "\nUpdating Suricata rules..."
+sudo suricata-update -o $rule_path
+tmp_exit_code=$?
+if [ $tmp_exit_code -gt 0 ]; then
+	echo "Suricata has failed to update and test your rules. Exit code: $tmp_exit_code"
+else
+	echo "Suricata has successfully updated and tested your rules!"
+fi
 
 # See what configuration the user is wanting to use
 echo -e "\nWhat configuration type would you like to install?:"
@@ -240,23 +293,25 @@ read -p "Enter your choice (# or abbreviation): " setup_choice
 if [[ $setup_choice == 1 || $setup_choice == "IDS" ]]; then
 # Check if iptables installed, install if not and delete all NFQUEUE rules (if any) to avoid denying pkts
 
-if ! command -v iptables &> /dev/null; then
-        echo "iptables not installed...installing for future use."
-        sudo apt update && sudo apt install iptables
-        tmp_exit_code=$?
-        if [ $temp_exit_code -gt 0 ]; then
-                echo -e "iptables had an issue installing... Exit code: $tmp_exit_code\n"
-        else
-                echo -e "iptables was successfully installed!\n"
+	if ! command -v iptables &> /dev/null; then
+        	echo "iptables not installed...installing for future use."
+        	sudo apt update && sudo apt install iptables
+        	tmp_exit_code=$?
+        	if [ $tmp_exit_code -gt 0 ]; then
+                	echo -e "iptables had an issue installing... Exit code: $tmp_exit_code\n"
+        	else
+                	echo -e "iptables was successfully installed!\n"
+        	fi
         fi
-else
-        # if already set installed, delete any rules that were set up
+	
+	# if already set installed, delete any rules that were set up
         sudo iptables -F INPUT
         sudo iptables -F OUTPUT
-fi	
+	
 	echo -e "\nYou have chosen to setup Intrusion Detection System (IDS)."
 	echo "Starting IDS configuration..."
 	./project-argus/suricata/ids-setup-script.sh
+
 elif [[ $setup_choice == 2 || $setup_choice == "IPS" ]]; then
 	echo -e "\nYou have chosen to setup Intrustion Prevention System (IPS)."
 	echo "Starting IPS configuraiton..."
