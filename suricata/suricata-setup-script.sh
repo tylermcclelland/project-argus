@@ -77,21 +77,65 @@ fi
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
 	#TODO: quick fix, find out how to grab selection withou tbeing case sensitive
-	echo "Type: \"WiFi\" or \"Ethernet\""
+	echo "Which interface do you want to setup Suricata on?"
+	echo -e "Type: \"WiFi\" or \"Ethernet\" \n"
 	read usr_interface_selection
 	if [[ $usr_interface_selection == "WiFi" || $usr_interface_selection == "Ethernet" ]]; then
-		echo "Okay, starting setup on $usr_interface_selection..."
+		echo -e "Okay, starting setup on $usr_interface_selection... \n"
 		tmp_bool=1
+		if [ $usr_interface_selection == "WiFi" ]; then
+			
+			# updating the .yaml to use the interface the user specified
+			# I reused your code here, hope that's okay
+
+			# the -i.bak flag should make a backup file before editing/changing the file
+			# testing on a fake yaml file
+
+			target_string="- interface:.*"
+			replacement_string="- interface: wlan0"
+			# UPDATE TO REAL .YAML IN FUTURE :)
+			sudo sed -i.bak "0,/$target_string/s|$target_string|$replacement_string|" suricata_mock.yaml
+			tmp_exit_code=$?
+
+			if [ $tmp_exit_code -gt 0 ]; then
+				echo -e "Your selected interface was unable to be updated in the configuration file. Exit code: $tmp_exit_code \n"
+				exit 1
+			else
+				#echo "From /etc/suricata/suricata.yaml: " //placeholder for final script
+				#cat /etc/suricata/suricata.yaml | grep "interface:" | head -n 1 //placeholder for final script
+				echo "From suricata_mock.yaml: "
+				cat suricata_mock.yaml | grep "interface:" | head -n 1
+				echo -e "Your selected interface has been updated in suricata.yaml! \n"
+			fi
+		elif [ $usr_interface_selection == "Ethernet" ]; then
+			target_string="- interface:.*"
+			replacement_string="- interface: eth0"
+			# UPDATE TO REAL .YAML IN FUTURE :)
+			sudo sed -i.bak "0,/$target_string/s|$target_string|$replacement_string|" suricata_mock.yaml
+			tmp_exit_code=$?
+
+			if [ $tmp_exit_code -gt 0 ]; then
+				echo -e "Your selected interface was unable to be updated in the configuration file. Exit code: $tmp_exit_code \n"
+				exit 1
+			else
+				#echo "From /etc/suricata/suricata.yaml: " //placeholder for final script
+				#cat /etc/suricata/suricata.yaml | grep "interface:" | head -n 1 //placeholder for final script
+				echo "From suricata_mock.yaml: "
+				cat suricata_mock.yaml | grep "interface:" | head -n 1
+				echo -e "Your selected interface has been updated in suricata.yaml! \n"
+			fi
+		fi
+
 	else
 		echo "You said: $usr_interface_selection. This is not a valid option."
-		echo "You must type \"WiFi\" or \"Ethernet\". Trying again..."
+		echo -e "You must type \"WiFi\" or \"Ethernet\". Trying again... \n"
 	fi
 done
 
 # awk added in future to get ip/network addr if users consent?
 #TODO: Inital IP grab bug fixed, remove debug prints when done
 tmp_bool=0
-ip_found=0
+#ip_found=0 //will later track this to make our script more robust, doesn't matter for the demo rn
 until [ $tmp_bool -eq 1 ]; do
 	read -p "Do you allow us to search for your IP? [yes/no] " usr_consent
 	if [[ $usr_consent == "yes" ]]; then
@@ -121,7 +165,7 @@ until [ $tmp_bool -eq 1 ]; do
 				sudo ip -V
 			else
 				#echo "Unable to install ifconfig"
-				echo "Unable to install ip :("
+				echo "Unable to install iproute2 :("
 				echo "You'll have to give your IP"
 			fi
 		fi
@@ -130,7 +174,7 @@ until [ $tmp_bool -eq 1 ]; do
 			#echo "wlan0 ip grab not yet implemented..."
 			#wifi_ip=ifconfig | tail -n 7 | head -n 1 #kind of hacky but I think ifconfig consistently prints on the same line numbers for any ifconfig version that the user will likely have TODO: investigate a better way to grab ip
 			pi_ip=$(sudo ip addr show wlan0 | grep "inet" | cut -c 10-21)
-			echo "WiFi: $pi_ip"
+			echo -e "WiFi: $pi_ip \n"
 			
 		elif [[ $usr_interface_selection == "Ethernet" ]]; then
 			#implement eth0 ip grab
@@ -139,7 +183,7 @@ until [ $tmp_bool -eq 1 ]; do
 			#eth_ip=
 			#echo "ETH: $eth_ip"
 			sudo ip addr show eth0
-			echo "Ethernet ip grab not yet implemented"
+			echo -e "Ethernet ip grab not yet implemented \n"
 		fi
 		# sudo ifconfig | grep "wlan0"
 
@@ -165,7 +209,7 @@ until [ $tmp_bool -eq 1 ]; do
 		done
 	else
 		tmp_bool=0 #probably not necessary, just ensuring loop functios properly
-		echo "You must type \"yes\" or \"no\". Try again..."
+		echo -e "You must type \"yes\" or \"no\". Try again... \n"
 	fi
 done
 
@@ -183,7 +227,7 @@ if [ $tmp_exit_code -gt 0 ]; then
 	echo "IP was unable to be updated. Exit code: $tmp_exit_code"
 	exit 1
 else
-	echo "IP address has been updated in suricata.yaml!"
+	echo "IP address has been updated in suricata.yaml!" #TODO: eventually (not necessary for the demo) we should probably put a check here for a valid IP such that I cant say my IP is "potato"
 fi
 
 
@@ -209,7 +253,8 @@ else
         # if already set installed, delete any rules that were set up
         sudo iptables -F INPUT
         sudo iptables -F OUTPUT
-fi	echo -e "\nYou have chosen to setup Intrusion Detection System (IDS)."
+fi	
+	echo -e "\nYou have chosen to setup Intrusion Detection System (IDS)."
 	echo "Starting IDS configuration..."
 	./project-argus/suricata/ids-setup-script.sh
 elif [[ $setup_choice == 2 || $setup_choice == "IPS" ]]; then
