@@ -5,7 +5,7 @@
 
 echo "Running the Suricata setup script..."
 
-./project-argus/suricata/suricata-setup-script.sh
+sudo ./project-argus/suricata/suricata-setup-script.sh
 tmp_exit_code=$?
 
 # Check there weren't config issues

@@ -42,11 +42,26 @@ else
         echo "Suricata not running. Starting Suricata..."
         sudo systemctl enable --now suricata
     else
-        echo "Suricata is running!"
+        echo -e "Suricata is running! \n"
     fi
 
 fi
 
+# ensuring suricata has a default ruleset loaded
+echo -e "Loading a default ruleset..."
+#suricata-update should've been downloaded when we installed Suricata, but adding a quick check
+sudo suricata-update -V
+tmp_exit_code=$?
+if [ $tmp_exit_code -gt 0 ]; then
+	echo "suricata-update not found"
+	echo "installing suricata-update"
+	sudo suricata-update
+	echo "suricata-update installed"
+	sudo suricata-update -V
+#else
+	#echo "suricata-update found!"
+	#sudo suricata-update -V
+fi
 # "basic setup"/configuration
 # the -i.bak flag should make a backup file before editing/changing the file
 
@@ -230,16 +245,19 @@ else
 	echo "IP address has been updated in suricata.yaml!" #TODO: eventually (not necessary for the demo) we should probably put a check here for a valid IP such that I cant say my IP is "potato"
 fi
 
+# based on us suricata-update now being run in setup (which loads the default rules to /var/lib/suricata/rules/) I changed the following to include that path. 
+# If i'm missing something and it should stay as /etc/suricata/rules, let me know!
+
 # Make sure that the rules file is up to date/the correct file path
 current_rule_path=$(grep "default-rule-path" suricata_mock.yaml)
 echo -e "\nYour default rule path is currently set to: \n$current_rule_path"
 
-read -p "The default rules file is /etc/suricata/rules. Does this match your file location? [yes/no]: " rule_input
+read -p "The default rules file is /var/lib/suricata/rules. Does this match your file location? [yes/no]: " rule_input
 
 if [[ $rule_input == "yes" ]]; then
 	echo "You entered 'yes', checking that the default-rule-path matches..."
 	# update to real file in future :)
-	if grep -q "default-rule-path: /etc/suricata/rules" suricata_mock.yaml; then
+	if grep -q "default-rule-path: /var/lib/suricata/rules" suricata_mock.yaml; then
 		echo -e "Default rule path matches! Continuing setup...\n"
 	else
 		def_rule_path="default-rule-path:.*"
@@ -247,7 +265,7 @@ if [[ $rule_input == "yes" ]]; then
 		echo $def_rule_path
 		read -p "Would you like to update to the default? [yes/no]: " update_input
 		if [[ $update_input == "yes" ]]; then
-			update_rule_path="default-rule-path: /etc/suricata/rules"
+			update_rule_path="default-rule-path: /var/lib/suricata/rules"
 			sudo sed -i.bak "0,/$def_rule_path/s|$def_rule_path|$update_rule_path|" suricata_mock.yaml
 			echo "The rule path has been updated! Restarting Suricata to update rule path..."
 			sudo systemctl restart suricata
@@ -261,7 +279,7 @@ else
 	if [[ $file_update == "yes" ]]; then
 		echo "You entered 'yes', updating default-rule-path..."
 		def_rule_path="default-rule-path:.*"
-		update_rule_path="default-rule-path: /etc/suricata/rules"
+		update_rule_path="default-rule-path: /var/lib/suricata/rules"
                 sudo sed -i.bak "0,/$def_rule_path/s|$def_rule_path|$update_rule_path|" suricata_mock.yaml
 		echo "Rule path has been succesfully updated! Restarting Suricata to update rule path..."
 		sudo systemctl restart suricata
