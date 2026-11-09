@@ -21,6 +21,9 @@ if [ $tmp_exit_code -gt 0 ]; then
 	break
 else
 
+# On the pcaps i've been testing with (ehich i'm making from recordign my own attacks on my pi) i'm getting a very low number of alerts... Maybe we
+# need to merge in some of those rulesets suricata-update provides, or make really specific ones to track exactly what we're looking for.
+
 #NOTE: the listed pcap files are not currently uploaded. Users must test w/ their own pcap files they pass the path too for the time being.
 
 # determining if user would like to run their own offline pcap test or use our default test
