@@ -253,7 +253,9 @@ current_rule_path=$(grep "default-rule-path" suricata_mock.yaml)
 echo -e "\nYour default rule path is currently set to: \n$current_rule_path"
 
 read -p "The default rules file is /var/lib/suricata/rules. Does this match your file location? [yes/no]: " rule_input
-
+#Hey, I changed the default path to be /var/lib/suricata/rules since thats what Suricata uses in the docs after running suricata-update
+# and they use it for merging rules from their rules list (list seen from 'sudo suricata-update list-sources') so I figured its best to go w/ what they used to avoid any funny buisness w/ potential bugs
+# but if i'm missing somethign go ahead and change it
 if [[ $rule_input == "yes" ]]; then
 	echo "You entered 'yes', checking that the default-rule-path matches..."
 	# update to real file in future :)
