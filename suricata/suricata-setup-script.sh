@@ -188,7 +188,7 @@ until [ $tmp_bool -eq 1 ]; do
 			#implement wifi ip grab
 			#echo "wlan0 ip grab not yet implemented..."
 			#wifi_ip=ifconfig | tail -n 7 | head -n 1 #kind of hacky but I think ifconfig consistently prints on the same line numbers for any ifconfig version that the user will likely have TODO: investigate a better way to grab ip
-			pi_ip=$(sudo ip addr show wlan0 | grep "inet" | cut -c 10-21)
+			pi_ip=$(sudo ip addr show wlan0 | grep -m 1 "inet" | cut -c 10-21)
 			echo -e "WiFi: $pi_ip \n"
 			sudo ip link set wlan0 promisc on
 		elif [[ $usr_interface_selection == "Ethernet" ]]; then
