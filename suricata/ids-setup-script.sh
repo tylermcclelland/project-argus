@@ -62,7 +62,7 @@ done
 echo -e "Now that we've have got a fresh IDS friendly .yaml, we need to update it with the right info \n"
 echo "starting to update the new .yaml..."
 
-
+#verifying we have the correct interface and HOME_NET setup in the yaml
 # the -i.bak flag should make a backup file before editing/changing the file
 # testing on a fake yaml file
 
@@ -136,4 +136,3 @@ fi
 echo "IDS setup done!"
 #sudo cp suricata/other-files/temp-ids.yaml suricata_mock.yaml
 
-#verifying we have the correct interface and HOME_NET setup in the yaml
