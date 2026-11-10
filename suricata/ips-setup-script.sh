@@ -70,7 +70,10 @@ fi
 # Check they are not wanting to use a custom rule set
 current_rule_path=$(grep "default-rule-path" suricata_mock.yaml)
 echo -e "\nYour default rule path is currently set to: \n$current_rule_path"
-read -p "Are you wanting to stay with this rule path or switch to custom rules? [stay/switch]: " rule_choice
+read -p "Are you wanting to stay with this rule path or switch to custom rule path? [stay/switch]: " rule_choice
+
+# get a boolean that = 1 if updates were made so it doesnt update suricata rules every time
+updated_suricata_rules=0
 
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
@@ -78,6 +81,8 @@ until [ $tmp_bool -eq 1 ]; do
 		tmp_bool=1
 		echo -e "You selected to stay on this rule path, continuing without update...\n"
 	elif [[ $rule_choice == "switch" ]]; then
+		def_rule_path="default-rule-path:.*"
+		updated_suricata_rules=1
 		read -p "You chose to switch to a custom rule path. Please enter the path you would like to use instead: " new_path
 		tmp_bool=1
 		tmp_inner_bool=0
@@ -97,8 +102,61 @@ until [ $tmp_bool -eq 1 ]; do
 	else
 		echo "You said $rule_choice, which is not a valid choice."
 		echo "Please enter 'stay' or 'switch' when trying again..."
+		read -p "Are you wanting to stay with this rule path or switch to custom rule path? [stay/switch]: " rule_choice
 	fi
 done
+
+# Check if user wants to add custom rules for IPS mode
+echo "The current rule-files being used at runtime:"
+# Print not just the first 2 lines
+sed -n '/^rule-files:/,/^[^ ]/p' suricata_mock.yaml
+
+read -p "These are the rule-files currently used at runtime. Would you like to add a custom rule file? [yes/no]: " add_custom
+
+tmp_bool=0
+until [ $tmp_bool -eq 1 ]; do
+	if [ $add_custom == "yes" ]; then
+		updated_suricata_rules=1
+		tmp_bool=1
+		read -p "You entered 'yes', please enter the file path for your custom rules file: " custom_file_path
+		tmp_inner_bool=0
+		until [ $tmp_inner_bool -eq 1 ]; do
+			echo "You entered the following file path:"
+			echo $custom_file_path
+			read -p "Is this the correct file path? [yes/no]: " correct_path
+			if [ $correct_path == "yes" ]; then
+				tmp_inner_bool=1
+				echo "You said 'yes', adding to the end of the Suricata rule-files..."
+				# update path using awk to append to end
+				sudo awk -v rule="$custom_file_path" '{ lines[NR]=$0; if (/^rule-files:/) in_rules=1; else if (in_rules && /^[^ ]/) in_rules=0; else if (in_rules && /^  - /) last=NR } END { for (i=1; i<=NR; i++) { print lines[i]; if (i==last) print "  - " rule } }' suricata_mock.yaml > /tmp/suricata_mock.yaml && sudo cp /tmp/suricata_mock.yaml suricata_mock.yaml
+				echo "The rule path has been added! The current rule-files are now:"
+				sed -n '/^rule-files:/,/^[^ ]/p' suricata_mock.yaml
+			else
+				echo "You said 'no', please find the correct file path and enter again..."
+				read -p "What is the file path for your custom rules file?: " custom_file_path
+			fi
+		done
+	elif [ $add_custom == "no" ]; then
+		tmp_bool=1
+		echo -e "You entered 'no', so no custom rule-files will be added at this time. Continuing setup...\n"
+	else
+		echo -e "You entered '$add_custom', which is not a valid input. Please enter 'yes' or 'no'.\n"
+		read -p "These are the rule-files currently used at runtime. Would you like to add a custom rule file? [yes/no]: " add_custom
+	fi
+done
+
+# only run updates if needed
+if [ $updated_suricata_rules -eq 1 ]; then
+	echo "The default rule path or a custom file has been added, updating Suricata rules..."
+	rule_path=$(grep -m 1 "default-rule-path:" suricata_mock.yaml | awk '{print $2}')
+	sudo suricata-update -o $rule_path
+	tmp_exit_code=$?
+	if [ $tmp_exit_code -gt 0 ]; then
+		echo "Suricata has failed to update and test your rules. Exit code: $tmp_exit_code"
+	else
+		echo -e "Suricata has successfully updated and tested your rules!\n"
+	fi
+fi
 
 # Setup NFQUEUE rules (just the video defaults for the demo)
 echo "Setting up basic NFQUEUE rules..."
