@@ -166,7 +166,7 @@ echo "NFQUEUE rules complete! Displaying iptables: "
 sudo iptables -vnL
 
 # Tell user how to start and allow them to opt into auto start
-echo -e "\nTo start Suricata in IPS mode, type 'sudo suricata -c /etc/suricata/suricata.yaml -q 2'"
+echo -e "\nTo start Suricata in IPS mode, type 'sudo suricata -c /etc/suricata/suricata_mock.yaml -q 2'"
 read -p "Would you like the script to start IPS mode for you? [yes/no]: " run_ips
 
 tmp_bool=0
