@@ -293,30 +293,36 @@ fi
 
 # Check if using custom rules
 echo "The current rule-files being used at runtime:"
-grep -A 2 "rule-files:" suricata_mock.yaml
+# Print not just the first 2 lines
+sed -n '/^rule-files:/,/^[^ ]/p' suricata_mock.yaml
 
-read -p "The default is to only use the suricata.rules, does this match your setup? [yes/no] " custom_input
+read -p "The default is to only use the suricata.rules, does this match your setup? [yes/no]: " custom_input
 if [[ $custom_input == "yes" ]]; then
 	# check its only Suricata.rules
 	if [[ $(grep -A 2 '^rule-files:' suricata_mock.yaml | grep '^  - ' | grep -vc '^  - suricata\.rules$') -eq 0 ]]; then
 		echo "rule-files category matches! Continuing setup..."
 	else
 		echo "You entered 'yes', but your rule-files is currently set up as:"
-		grep -A 2 "rule-files:" suricata_mock.yaml
+		sed -n '/^rule-files:/,/^[^ ]/p' suricata_mock.yaml
 		read -p "Would you like to update to the default? [yes/no]: " update_rules
 		if [[ $update_rules == "yes" ]]; then
 			echo "Updating rule files..."
-			sed -i '/^rule-files:/{n; /^  - suricata\.rules$/!d;}' suricata_mock.yaml
+			sed -i '/^rule-files:/,/^[^ ]/{/^  - suricata\.rules$/!{/^  - /d;}}' suricata_mock.yaml
+			# debug
+			sed -n '/^rule-files:/,/^[^ ]/p' suricata_mock.yaml
 			echo "The rule files have been updated! Continuing setup..."
 		else
 			echo "You entered 'no', your rule-files will not be updated. Continuing setup..."
 		fi
 	fi
 else
-	read -p "You entered 'no', would you like to remove the custom path file?" remove_input
+	read -p "You entered 'no', would you like to remove the custom path file? [yes/no]: " remove_input
 	if [[ $remove_input == "yes" ]]; then
 		echo "You entered 'yes', the custom rule files will be removed at this time..."
-		sed -i '/^rule-files:/{n; /^  - suricata\.rules$/!d;}' suricata_mock.yaml
+		sed -i '/^rule-files:/,/^[^ ]/{/^  - suricata\.rules$/!{/^  - /d;}}' suricata_mock.yaml
+		# debug
+		echo "The new rule files: "
+		sed -n '/^rule-files:/,/^[^ ]/p' suricata_mock.yaml
 		echo "The rule files have been updated! Continuing setup..."
 	else
 		echo "You entered 'no', the rule-files will not be updated at this time. Continuing setup..."
