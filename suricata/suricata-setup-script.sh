@@ -368,7 +368,7 @@ if [[ $setup_choice == 1 || $setup_choice == "IDS" ]]; then
 	
 	echo -e "\nYou have chosen to setup Intrusion Detection System (IDS)."
 	echo "Starting IDS configuration..."
-	./project-argus/suricata/ids-setup-script.sh
+	./project-argus/suricata/ids-setup-script.sh $pi_ip $usr_interface_selection
 
 elif [[ $setup_choice == 2 || $setup_choice == "IPS" ]]; then
 	echo -e "\nYou have chosen to setup Intrustion Prevention System (IPS)."

@@ -15,12 +15,13 @@ pi_ip=$1
 usr_interface_selection=$2
 
 # copying a known "out of the box" .yaml (which has no IPS specific config options added to; effectively already in IDS mode after running setup)
-echo "If you have any special configurations in your current suricata.yaml that you want to save? [yes/no]"
+echo "Do you have any special configurations in your current suricata.yaml that you want to save? [yes/no]"
 echo "NOTE: you're current suricata configuration (/etc/suricata/suricata.yaml) will be overwritten if you say no"
 read usr_choice
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
     if [[ $usr_choice == "yes" ]]; then
+        tmp_bool=1
         echo "will add implementation to back up your current yaml for later use"
         echo -e "Please provide the path of the .yaml you want to save: "
         echo -e "Enter as \"/this/is/my/path/configFile.yaml\" where configFile.yaml is the file you want to save in this case: "
@@ -42,9 +43,10 @@ until [ $tmp_bool -eq 1 ]; do
         fi
 
     elif [[ $usr_choice == "no" ]]; then
+        tmp_bool=1
         echo "Okay, replacing your suricata.yaml with an IDS friendly suricata.yaml"
         #sudo cp suricata/other-files/temp-ids.yaml /etc/suricata/suricata.yaml //to be used in final script
-        sudo cp suricata/other-files/temp-ids.yaml suricata_mock.yaml 
+        sudo cp other-files/temp-ids.yaml suricata_mock.yaml #need to update this (and stuff like this) to have a consistent dir like: this project runs from /project-argus 
         tmp_exit_code=$?
         if [ $tmp_exit_code -eq 0 ]; then
             echo -e "New suricata.yaml succesfully saved to /etc/suricata/suricata.yaml! \n"
@@ -79,6 +81,8 @@ if [ $tmp_exit_code -gt 0 ]; then
 else
 	echo "IP address has been updated in suricata.yaml!" #TODO: eventually (not necessary for the demo) we should probably put a check here for a valid IP such that I cant say my IP is "potato"
 fi
+
+
 
 # Make sure that the rules file is up to date/the correct file path
 current_rule_path=$(grep "default-rule-path" suricata_mock.yaml)
