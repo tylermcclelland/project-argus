@@ -18,7 +18,7 @@ echo "Intrusion Prevention System (IPS) script is now running!"
 echo -e "\nChecking if NFQueue is enabled..."
 suricata --build-info | grep "NFQueue"
 nfq_enabled=$(suricata --build-info | grep "NFQueue support" | awk '{print $2}')
-if [[ nfq_enabled == "no" ]]; then
+if [[ $nfq_enabled == "no" ]]; then
 	# need to look into how to actually install/enable if not auto enabled
 	echo "NFQueue is not currently supported on your build."
 else
@@ -31,7 +31,7 @@ grep -A 8 "nfq:" suricata_mock.yaml
 # check mode: accept
 if grep -qE '^[[:space:]]*#[[:space:]]*mode:[[:space:]]*accept' suricata_mock.yaml; then
 	echo "'mode' currently commented. Updating to uncommented..."
-	sed -i.bak 's/^[[:space:]]*#[[:space:]]*mode:/ mode:/' suricata_mock.yaml
+	sed -i.bak '/nfq:/,/^[^[:space:]#]/ s/^[[:space:]]*#[[:space:]]*\(mode:[[:space:]]*accept\)/  \1/' suricata_mock.yaml
 	echo "'mode' is no longer commented. Continuing checks..."
 else
 	echo "'mode' already uncommented. Continuing checks..."
@@ -166,7 +166,7 @@ echo "NFQUEUE rules complete! Displaying iptables: "
 sudo iptables -vnL
 
 # Tell user how to start and allow them to opt into auto start
-echo -e "\nTo start Suricata in IPS mode, type 'sudo suricata -c /etc/suricata/suricata_mock.yaml -q 2'"
+echo -e "\nTo start Suricata in IPS mode, type 'sudo suricata -c ~/suricata_mock.yaml -q 2'"
 read -p "Would you like the script to start IPS mode for you? [yes/no]: " run_ips
 
 tmp_bool=0
@@ -174,7 +174,7 @@ until [ $tmp_bool -eq 1 ]; do
 	if [ $run_ips == "yes" ]; then
 		tmp_bool=1
 		echo "You entered 'yes', starting Suricata in IPS mode!"
-		sudo suricata -c /etc/suricata/suricata.yaml -q 2
+		sudo suricata -c ~/suricata_mock.yaml -q 2
 	elif [ $run_ips == "no" ]; then
 		tmp_bool=1
 		echo "You entered 'no'. Suricata will not begin at this time."
