@@ -6,6 +6,8 @@
 # The method of install is based on the official suricata documentation and
 # the following youtube video: https://www.youtube.com/watch?v=GrT64MH2CIM
 
+#NOTE: IT IS ASSUMED THIS WILL BE RUN FROM REPO ROOT (meaning project-argus)
+
 
 # making sure you're system's up to date
 echo "Ensuring system is up do date..."
@@ -87,9 +89,8 @@ else
 fi
 
 # determine users desired interface (this may just be temporary? maybe we want to be running an instance of Suricata on eth0 and wlan0? for now let them choose)
-#NOTE: my pi says eth0 is down. should we go through the trouble of briging up the eth0 interface on a users machine if they
+# NOTE: my pi says eth0 is down. should we go through the trouble of briging up the eth0 interface on a users machine if they
 # 	   don't have it set up? or just tell them "You haven't yet brought up the eth0 interface on your machine... WiFi instead?? [y/n]"
-
 
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
@@ -103,7 +104,7 @@ until [ $tmp_bool -eq 1 ]; do
 	# tmp_bool=1
 	if [[ $usr_interface_selection -eq 0 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" ]]; then
 		tmp_bool=1
-		echo -e "Okay, startign setup on WiFi... \n"
+		echo -e "Okay, starting setup on WiFi... \n"
 		# updating the .yaml to use the interface the user specified
 		# the -i.bak flag should make a backup file before editing/changing the file
 		# testing on a fake yaml file
@@ -126,7 +127,7 @@ until [ $tmp_bool -eq 1 ]; do
 		fi
 	elif [[ $usr_interface_selection -eq 1 || $usr_interface_selection == "Ethernet" || $usr_interface_selection == "ethernet" ]]; then
 		tmp_bool=1
-		echo -e "Okay, startign setup on Ethernet... \n"
+		echo -e "Okay, starting setup on Ethernet... \n"
 		target_string="- interface:.*"
 		replacement_string="- interface: eth0"
 		# UPDATE TO REAL .YAML IN FUTURE :)
@@ -157,51 +158,39 @@ until [ $tmp_bool -eq 1 ]; do
 	if [[ $usr_consent == "yes" ]]; then
 		tmp_bool=1 # to exit initial yes/no check
 		echo "Starting search for your IP..."
-
-		# apparently ifconfig is depricated, their manpage says to use "ip"... Leaving ifconfig setup/grab code just incase
-		# i have problems w "ip" TODO: remove ifconfig code if it's pointless
-
-		#echo "Checking ifconfig installation"
-		#sudo ifconfig --version #checking if user has ifconfig
 		echo "Checking ip installation"
 		sudo ip -V #checking if user has ip
 		tmp_exit_code=$?
 		if [ $tmp_exit_code -eq 0 ]; then
-			#echo "ifconfig installation verified"
 			echo "ip installation verified"
 		else
-			#echo "ifconfig not found"
-			#sudo apt install net-tools
 			echo "ip (from iproute2) not found... Installing"
 			sudo apt install iproute2
 			tmp_exit_code=$?
 			if [ $tmp_exit_code -eq 0 ]; then
-				#echo "net-tools installed! (ifconfig is contained within net-tools)"
 				echo "iproute2 installed! (ip tool is contained within iproute2)"
 				sudo ip -V
 			else
-				#echo "Unable to install ifconfig"
 				echo "Unable to install iproute2 :("
 				echo "You'll have to give your IP"
 			fi
 		fi
-		if [[ $usr_interface_selection == "WiFi" ]]; then
+		if [[ $usr_interface_selection -eq 0 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" ]]; then
 			#implement wifi ip grab
-			#echo "wlan0 ip grab not yet implemented..."
-			#wifi_ip=ifconfig | tail -n 7 | head -n 1 #kind of hacky but I think ifconfig consistently prints on the same line numbers for any ifconfig version that the user will likely have TODO: investigate a better way to grab ip
 			pi_ip=$(sudo ip addr show wlan0 | grep -m 1 "inet" | cut -c 10-21)
 			echo -e "WiFi: $pi_ip \n"
 			sudo ip link set wlan0 promisc on
-		elif [[ $usr_interface_selection == "Ethernet" ]]; then
-			#implement eth0 ip grab
-			#echo "eth0 ip grab not yet implemented..."
-			#eth_ip=ifconfig | head -n 2 | tail -n 1
-			#eth_ip=
+		elif [[ $usr_interface_selection -eq 1 || $usr_interface_selection == "Ethernet" || $usr_interface_selection == "ethernet" ]]; then
+			#implement eth0 ip grab 
+			# NOTE: ETH IP grab not yet implemented because we're assuming a user w/ an out of the box system (Morgan correct me if i'm wrong!) and on my 
+			# pi, eth is "down" and not setup (not showing an ipv4 addr), thus it is TBD if we are going to set it up for them in this script, or just 
+			# tell them they need to go set it up
+
+			#pi_ip=$(sudo ip addr show eth0 | grep -m 1 "inet" | cut -c 10-21)
 			#echo "ETH: $eth_ip"
 			sudo ip addr show eth0
 			echo -e "Ethernet ip grab not yet implemented \n"
 		fi
-		# sudo ifconfig | grep "wlan0"
 
 	#echo "HERE 1"
 	elif [[ $usr_consent == "no" ]]; then
