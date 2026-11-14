@@ -235,17 +235,11 @@ else
 	echo "IP address has been updated in suricata.yaml!" #TODO: eventually (not necessary for the demo) we should probably put a check here for a valid IP such that I cant say my IP is "potato"
 fi
 
-# based on us suricata-update now being run in setup (which loads the default rules to /var/lib/suricata/rules/) I changed the following to include that path. 
-# If i'm missing something and it should stay as /etc/suricata/rules, let me know!
-
 # Make sure that the rules file is up to date/the correct file path
 current_rule_path=$(grep "default-rule-path" suricata/suricata_mock.yaml)
 echo -e "\nYour default rule path is currently set to: \n$current_rule_path"
 
 read -p "The default rules file is /var/lib/suricata/rules. Does this match your file location? [yes/no]: " rule_input
-#Hey, I changed the default path to be /var/lib/suricata/rules since thats what Suricata uses in the docs after running suricata-update
-# and they use it for merging rules from their rules list (list seen from 'sudo suricata-update list-sources') so I figured its best to go w/ what they used to avoid any funny buisness w/ potential bugs
-# but if i'm missing somethign go ahead and change it
 if [[ $rule_input == "yes" ]]; then
 	echo "You entered 'yes', checking that the default-rule-path matches..."
 	# update to real file in future :)
@@ -363,7 +357,7 @@ if [[ $setup_choice == 1 || $setup_choice == "IDS" ]]; then
 elif [[ $setup_choice == 2 || $setup_choice == "IPS" ]]; then
 	echo -e "\nYou have chosen to setup Intrustion Prevention System (IPS)."
 	echo "Starting IPS configuraiton..."
-	./project-argus/suricata/ips-setup-script.sh
+	./suricata/ips-setup-script.sh
 else
 	echo -e "\nYou entered $setup_choice, which is not a valid answer."
 fi
