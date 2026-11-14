@@ -4,7 +4,8 @@
 # (tested on Rasberry Pi running Raspberry Pi OS or Raspbian)
 #
 # The method of install is based on the official suricata documentation and
-# the following youtube video: https://www.youtube.com/watch?v=GrT64MH2CIM
+# the following youtube videos: 
+# https://www.youtube.com/watch?v=GrT64MH2CIM , https://www.youtube.com/watch?v=8Q3Nhyvh-1I&t=2046s , https://www.youtube.com/watch?v=UXKbh0jPPpg
 
 #NOTE: IT IS ASSUMED THIS WILL BE RUN FROM REPO ROOT (meaning project-argus)
 
@@ -96,13 +97,13 @@ tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
 	#TODO: quick fix, find out how to grab selection withou tbeing case sensitive UPDATE: just assuming they'll select the num, or type it upper or lower case still TODO!
 	echo "Which interface do you want to setup Suricata on?"
-	echo "0: WiFi (most common)"
-	echo "1: Ethernet (if you connect to your router via a LAN cable)"
+	echo "1: WiFi (most common)"
+	echo "2: Ethernet (if you connect to your router via a LAN cable)"
 	read usr_interface_selection
 	#if [[ $usr_interface_selection -eq 0 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" || $usr_interface_selection -eq 1 || $usr_interface_selection == "Ethernet" || $usr_interface_selection == "ethernet" ]]; then
 	#	echo -e "Okay, starting setup on $usr_interface_selection... \n"
 	# tmp_bool=1
-	if [[ $usr_interface_selection -eq 0 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" ]]; then
+	if [[ $usr_interface_selection -eq 1 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" ]]; then
 		tmp_bool=1
 		echo -e "Okay, starting setup on WiFi... \n"
 		# updating the .yaml to use the interface the user specified
@@ -114,7 +115,6 @@ until [ $tmp_bool -eq 1 ]; do
 		# UPDATE TO REAL .YAML IN FUTURE :)
 		sudo sed -i.bak "0,/$target_string/s|$target_string|$replacement_string|" suricata/suricata_mock.yaml
 		tmp_exit_code=$?
-
 		if [ $tmp_exit_code -gt 0 ]; then
 			echo -e "Your selected interface was unable to be updated in the configuration file. Exit code: $tmp_exit_code \n"
 			exit 1
@@ -125,7 +125,7 @@ until [ $tmp_bool -eq 1 ]; do
 			cat suricata/suricata_mock.yaml | grep "interface:" | head -n 1
 			echo -e "Your selected interface has been updated in suricata.yaml! \n"
 		fi
-	elif [[ $usr_interface_selection -eq 1 || $usr_interface_selection == "Ethernet" || $usr_interface_selection == "ethernet" ]]; then
+	elif [[ $usr_interface_selection -eq 2 || $usr_interface_selection == "Ethernet" || $usr_interface_selection == "ethernet" ]]; then
 		tmp_bool=1
 		echo -e "Okay, starting setup on Ethernet... \n"
 		target_string="- interface:.*"
@@ -133,7 +133,6 @@ until [ $tmp_bool -eq 1 ]; do
 		# UPDATE TO REAL .YAML IN FUTURE :)
 		sudo sed -i.bak "0,/$target_string/s|$target_string|$replacement_string|" suricata/suricata_mock.yaml
 		tmp_exit_code=$?
-
 		if [ $tmp_exit_code -gt 0 ]; then
 			echo -e "Your selected interface was unable to be updated in the configuration file. Exit code: $tmp_exit_code \n"
 			exit 1
@@ -154,8 +153,11 @@ done
 tmp_bool=0
 #ip_found=0 //will later track this to make our script more robust, doesn't matter for the demo rn
 until [ $tmp_bool -eq 1 ]; do
-	read -p "Do you allow us to search for your IP? [yes/no] " usr_consent
-	if [[ $usr_consent == "yes" ]]; then
+	echo "Do you allow us to search for your IP?"
+	echo "1: Yes (Easiest and most common) "
+	echo "2: No (You will have to go find the correct IP yourself)"
+	read usr_consent
+	if [[ $usr_consent == "yes"  || $usr_consent == "Yes" || $usr_consent -eq 1 ]]; then
 		tmp_bool=1 # to exit initial yes/no check
 		echo "Starting search for your IP..."
 		echo "Checking ip installation"
@@ -175,12 +177,12 @@ until [ $tmp_bool -eq 1 ]; do
 				echo "You'll have to give your IP"
 			fi
 		fi
-		if [[ $usr_interface_selection -eq 0 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" ]]; then
+		if [[ $usr_interface_selection -eq 1 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" ]]; then
 			#implement wifi ip grab
 			pi_ip=$(sudo ip addr show wlan0 | grep -m 1 "inet" | cut -c 10-21)
 			echo -e "WiFi: $pi_ip \n"
 			sudo ip link set wlan0 promisc on
-		elif [[ $usr_interface_selection -eq 1 || $usr_interface_selection == "Ethernet" || $usr_interface_selection == "ethernet" ]]; then
+		elif [[ $usr_interface_selection -eq 2 || $usr_interface_selection == "Ethernet" || $usr_interface_selection == "ethernet" ]]; then
 			#implement eth0 ip grab 
 			# NOTE: ETH IP grab not yet implemented because we're assuming a user w/ an out of the box system (Morgan correct me if i'm wrong!) and on my 
 			# pi, eth is "down" and not setup (not showing an ipv4 addr), thus it is TBD if we are going to set it up for them in this script, or just 
@@ -193,20 +195,20 @@ until [ $tmp_bool -eq 1 ]; do
 		fi
 
 	#echo "HERE 1"
-	elif [[ $usr_consent == "no" ]]; then
+	elif [[ $usr_consent == "no"  || $usr_consent == "No" || $usr_consent -eq 2 ]]; then
 		#echo "HERE 2"
 		tmp_bool=1 # to exit initial yes/no check
 		tmp_bool_inner=0
 		until [ $tmp_bool_inner -eq 1 ]; do
 			#echo "HERE 3"
 			read -p "Please provide your IP: " pi_ip
-			read -p "You said $pi_ip. Is that right? [yes/no]" usr_consent
-			if [[ $usr_consent == "yes" ]]; then
+			read -p "You said $pi_ip. Is that right? [yes/no]" usr_consent # I"m thinking on the options that signal someone has more "technical depth," we can 
+			if [[ $usr_consent == "yes" || $usr_consent == "y" || $usr_consent == "Yes" ]]; then						   # just go with the [yes/no]. 
 				#echo "HERE 4"
 				tmp_bool_inner=1
 				echo "IP:$pi_ip stored."
 				continue
-			elif [[ $usr_consent == "no" ]]; then
+			elif [[ $usr_consent == "no" || $usr_consent == "n" || $usr_consent == "No" ]]; then	
 				#echo "HERE 5"
 				tmp_bool_inner=0
 				echo "Okay, lets try again..."
@@ -214,7 +216,7 @@ until [ $tmp_bool -eq 1 ]; do
 		done
 	else
 		tmp_bool=0 #probably not necessary, just ensuring loop functios properly
-		echo -e "You must type \"yes\" or \"no\". Try again... \n"
+		echo -e "You must type \"yes\" or 1,  \"no\" or 2. Try again... \n"
 	fi
 done
 
@@ -328,8 +330,9 @@ fi
 
 # See what configuration the user is wanting to use
 echo -e "\nWhat configuration type would you like to install?:"
-echo "1. Intrusion Detection System (IDS)"
-echo "2. Intrusion Prevention System (IPS) - 'advanced' mode"
+echo "1: Intrusion Detection System (IDS) - Will alert but not block network traffic "
+echo "2: Intrusion Prevention System (IPS) - Will alert and/or block network traffic ('advanced' mode)" #idk if we should table the IPS mode... you already have it set up right? why not use something useful
+echo "** NOTE: IPS Mode is only recommended for those who have a good understanding of computer networks **"
 read -p "Enter your choice (# or abbreviation): " setup_choice
 
 if [[ $setup_choice == 1 || $setup_choice == "IDS" ]]; then
