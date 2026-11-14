@@ -89,65 +89,66 @@ fi
 # determine users desired interface (this may just be temporary? maybe we want to be running an instance of Suricata on eth0 and wlan0? for now let them choose)
 #NOTE: my pi says eth0 is down. should we go through the trouble of briging up the eth0 interface on a users machine if they
 # 	   don't have it set up? or just tell them "You haven't yet brought up the eth0 interface on your machine... WiFi instead?? [y/n]"
+
+
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
-	#TODO: quick fix, find out how to grab selection withou tbeing case sensitive
+	#TODO: quick fix, find out how to grab selection withou tbeing case sensitive UPDATE: just assuming they'll select the num, or type it upper or lower case still TODO!
 	echo "Which interface do you want to setup Suricata on?"
-	echo -e "Type: \"WiFi\" or \"Ethernet\" \n"
+	echo "0: WiFi (most common)"
+	echo "1: Ethernet (if you connect to your router via a LAN cable)"
 	read usr_interface_selection
-	if [[ $usr_interface_selection == "WiFi" || $usr_interface_selection == "Ethernet" ]]; then
-		echo -e "Okay, starting setup on $usr_interface_selection... \n"
+	#if [[ $usr_interface_selection -eq 0 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" || $usr_interface_selection -eq 1 || $usr_interface_selection == "Ethernet" || $usr_interface_selection == "ethernet" ]]; then
+	#	echo -e "Okay, starting setup on $usr_interface_selection... \n"
+	# tmp_bool=1
+	if [[ $usr_interface_selection -eq 0 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" ]]; then
 		tmp_bool=1
-		if [ $usr_interface_selection == "WiFi" ]; then
-			
-			# updating the .yaml to use the interface the user specified
-			# I reused your code here, hope that's okay
+		echo -e "Okay, startign setup on WiFi... \n"
+		# updating the .yaml to use the interface the user specified
+		# the -i.bak flag should make a backup file before editing/changing the file
+		# testing on a fake yaml file
 
-			# the -i.bak flag should make a backup file before editing/changing the file
-			# testing on a fake yaml file
+		target_string="- interface:.*"
+		replacement_string="- interface: wlan0"
+		# UPDATE TO REAL .YAML IN FUTURE :)
+		sudo sed -i.bak "0,/$target_string/s|$target_string|$replacement_string|" suricata/suricata_mock.yaml
+		tmp_exit_code=$?
 
-			target_string="- interface:.*"
-			replacement_string="- interface: wlan0"
-			# UPDATE TO REAL .YAML IN FUTURE :)
-			sudo sed -i.bak "0,/$target_string/s|$target_string|$replacement_string|" suricata_mock.yaml
-			tmp_exit_code=$?
-
-			if [ $tmp_exit_code -gt 0 ]; then
-				echo -e "Your selected interface was unable to be updated in the configuration file. Exit code: $tmp_exit_code \n"
-				exit 1
-			else
-				#echo "From /etc/suricata/suricata.yaml: " //placeholder for final script
-				#cat /etc/suricata/suricata.yaml | grep "interface:" | head -n 1 //placeholder for final script
-				echo "From suricata_mock.yaml: "
-				cat suricata_mock.yaml | grep "interface:" | head -n 1
-				echo -e "Your selected interface has been updated in suricata.yaml! \n"
-			fi
-		elif [ $usr_interface_selection == "Ethernet" ]; then
-			target_string="- interface:.*"
-			replacement_string="- interface: eth0"
-			# UPDATE TO REAL .YAML IN FUTURE :)
-			sudo sed -i.bak "0,/$target_string/s|$target_string|$replacement_string|" suricata_mock.yaml
-			tmp_exit_code=$?
-
-			if [ $tmp_exit_code -gt 0 ]; then
-				echo -e "Your selected interface was unable to be updated in the configuration file. Exit code: $tmp_exit_code \n"
-				exit 1
-			else
-				#echo "From /etc/suricata/suricata.yaml: " //placeholder for final script
-				#cat /etc/suricata/suricata.yaml | grep "interface:" | head -n 1 //placeholder for final script
-				echo "From suricata_mock.yaml: "
-				cat suricata_mock.yaml | grep "interface:" | head -n 1
-				echo -e "Your selected interface has been updated in suricata.yaml! \n"
-			fi
+		if [ $tmp_exit_code -gt 0 ]; then
+			echo -e "Your selected interface was unable to be updated in the configuration file. Exit code: $tmp_exit_code \n"
+			exit 1
+		else
+			#echo "From /etc/suricata/suricata.yaml: " //placeholder for final script
+			#cat /etc/suricata/suricata.yaml | grep "interface:" | head -n 1 //placeholder for final script
+			echo "From suricata/suricata_mock.yaml: "
+			cat suricata/suricata_mock.yaml | grep "interface:" | head -n 1
+			echo -e "Your selected interface has been updated in suricata.yaml! \n"
 		fi
+	elif [[ $usr_interface_selection -eq 1 || $usr_interface_selection == "Ethernet" || $usr_interface_selection == "ethernet" ]]; then
+		tmp_bool=1
+		echo -e "Okay, startign setup on Ethernet... \n"
+		target_string="- interface:.*"
+		replacement_string="- interface: eth0"
+		# UPDATE TO REAL .YAML IN FUTURE :)
+		sudo sed -i.bak "0,/$target_string/s|$target_string|$replacement_string|" suricata/suricata_mock.yaml
+		tmp_exit_code=$?
 
+		if [ $tmp_exit_code -gt 0 ]; then
+			echo -e "Your selected interface was unable to be updated in the configuration file. Exit code: $tmp_exit_code \n"
+			exit 1
+		else
+			#echo "From /etc/suricata/suricata.yaml: " //placeholder for final script
+			#cat /etc/suricata/suricata.yaml | grep "interface:" | head -n 1 //placeholder for final script
+			echo "From suricata/suricata_mock.yaml: "
+			cat suricata/suricata_mock.yaml | grep "interface:" | head -n 1
+			echo -e "Your selected interface has been updated in suricata.yaml! \n"
+		fi
 	else
 		echo "You said: $usr_interface_selection. This is not a valid option."
-		echo -e "You must type \"WiFi\" or \"Ethernet\". Trying again... \n"
+		echo -e "You must type \"WiFi\" or 0, \"Ethernet\" or 1. Trying again... \n"
 	fi
 done
 
-# awk added in future to get ip/network addr if users consent?
 #TODO: Inital IP grab bug fixed, remove debug prints when done
 tmp_bool=0
 #ip_found=0 //will later track this to make our script more robust, doesn't matter for the demo rn
@@ -235,7 +236,7 @@ target_string="HOME_NET:.*"
 replacement_string="HOME_NET: \"[$pi_ip/24]\""
 
 # UPDATE TO REAL .YAML IN FUTURE :)
-sudo sed -i.bak "0,/$target_string/s|$target_string|$replacement_string|" suricata_mock.yaml
+sudo sed -i.bak "0,/$target_string/s|$target_string|$replacement_string|" suricata/suricata_mock.yaml
 tmp_exit_code=$?
 
 if [ $tmp_exit_code -gt 0 ]; then
@@ -249,7 +250,7 @@ fi
 # If i'm missing something and it should stay as /etc/suricata/rules, let me know!
 
 # Make sure that the rules file is up to date/the correct file path
-current_rule_path=$(grep "default-rule-path" suricata_mock.yaml)
+current_rule_path=$(grep "default-rule-path" suricata/suricata_mock.yaml)
 echo -e "\nYour default rule path is currently set to: \n$current_rule_path"
 
 read -p "The default rules file is /var/lib/suricata/rules. Does this match your file location? [yes/no]: " rule_input
@@ -259,7 +260,7 @@ read -p "The default rules file is /var/lib/suricata/rules. Does this match your
 if [[ $rule_input == "yes" ]]; then
 	echo "You entered 'yes', checking that the default-rule-path matches..."
 	# update to real file in future :)
-	if grep -q "default-rule-path: /var/lib/suricata/rules" suricata_mock.yaml; then
+	if grep -q "default-rule-path: /var/lib/suricata/rules" suricata/suricata_mock.yaml; then
 		echo -e "Default rule path matches! Continuing setup...\n"
 	else
 		def_rule_path="default-rule-path:.*"
@@ -268,7 +269,7 @@ if [[ $rule_input == "yes" ]]; then
 		read -p "Would you like to update to the default? [yes/no]: " update_input
 		if [[ $update_input == "yes" ]]; then
 			update_rule_path="default-rule-path: /var/lib/suricata/rules"
-			sudo sed -i.bak "0,/$def_rule_path/s|$def_rule_path|$update_rule_path|" suricata_mock.yaml
+			sudo sed -i.bak "0,/$def_rule_path/s|$def_rule_path|$update_rule_path|" suricata/suricata_mock.yaml
 			echo "The rule path has been updated! Restarting Suricata to update rule path..."
 			sudo systemctl restart suricata
 			echo "Suricata has been restarted! Continuing setup..."
@@ -282,7 +283,7 @@ else
 		echo "You entered 'yes', updating default-rule-path..."
 		def_rule_path="default-rule-path:.*"
 		update_rule_path="default-rule-path: /var/lib/suricata/rules"
-                sudo sed -i.bak "0,/$def_rule_path/s|$def_rule_path|$update_rule_path|" suricata_mock.yaml
+                sudo sed -i.bak "0,/$def_rule_path/s|$def_rule_path|$update_rule_path|" suricata/suricata_mock.yaml
 		echo "Rule path has been succesfully updated! Restarting Suricata to update rule path..."
 		sudo systemctl restart suricata
 		echo "Suricata has been restarted! Continuing setup..."
@@ -294,22 +295,22 @@ fi
 # Check if using custom rules
 echo "The current rule-files being used at runtime:"
 # Print not just the first 2 lines
-sed -n '/^rule-files:/,/^[^ ]/p' suricata_mock.yaml
+sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
 
 read -p "The default is to only use the suricata.rules, does this match your setup? [yes/no]: " custom_input
 if [[ $custom_input == "yes" ]]; then
 	# check its only Suricata.rules
-	if [[ $(grep -A 2 '^rule-files:' suricata_mock.yaml | grep '^  - ' | grep -vc '^  - suricata\.rules$') -eq 0 ]]; then
+	if [[ $(grep -A 2 '^rule-files:' suricata/suricata_mock.yaml | grep '^  - ' | grep -vc '^  - suricata\.rules$') -eq 0 ]]; then
 		echo "rule-files category matches! Continuing setup..."
 	else
 		echo "You entered 'yes', but your rule-files is currently set up as:"
-		sed -n '/^rule-files:/,/^[^ ]/p' suricata_mock.yaml
+		sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
 		read -p "Would you like to update to the default? [yes/no]: " update_rules
 		if [[ $update_rules == "yes" ]]; then
 			echo "Updating rule files..."
-			sed -i '/^rule-files:/,/^[^ ]/{/^  - suricata\.rules$/!{/^  - /d;}}' suricata_mock.yaml
+			sed -i '/^rule-files:/,/^[^ ]/{/^  - suricata\.rules$/!{/^  - /d;}}' suricata/suricata_mock.yaml
 			# debug
-			sed -n '/^rule-files:/,/^[^ ]/p' suricata_mock.yaml
+			sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
 			echo "The rule files have been updated! Continuing setup..."
 		else
 			echo "You entered 'no', your rule-files will not be updated. Continuing setup..."
@@ -319,10 +320,10 @@ else
 	read -p "You entered 'no', would you like to remove the custom path file? [yes/no]: " remove_input
 	if [[ $remove_input == "yes" ]]; then
 		echo "You entered 'yes', the custom rule files will be removed at this time..."
-		sed -i '/^rule-files:/,/^[^ ]/{/^  - suricata\.rules$/!{/^  - /d;}}' suricata_mock.yaml
+		sed -i '/^rule-files:/,/^[^ ]/{/^  - suricata\.rules$/!{/^  - /d;}}' suricata/suricata_mock.yaml
 		# debug
 		echo "The new rule files: "
-		sed -n '/^rule-files:/,/^[^ ]/p' suricata_mock.yaml
+		sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
 		echo "The rule files have been updated! Continuing setup..."
 	else
 		echo "You entered 'no', the rule-files will not be updated at this time. Continuing setup..."
@@ -332,7 +333,7 @@ fi
 # Update the Suricata rules before starting
 
 # get the rule path without hte beginning
-rule_path=$(grep -m 1 "default-rule-path:" suricata_mock.yaml | awk '{print $2}')
+rule_path=$(grep -m 1 "default-rule-path:" suricata/suricata_mock.yaml | awk '{print $2}')
 echo -e "\nUpdating Suricata rules..."
 sudo suricata-update -o $rule_path
 tmp_exit_code=$?
@@ -368,7 +369,7 @@ if [[ $setup_choice == 1 || $setup_choice == "IDS" ]]; then
 	
 	echo -e "\nYou have chosen to setup Intrusion Detection System (IDS)."
 	echo "Starting IDS configuration..."
-	./project-argus/suricata/ids-setup-script.sh $pi_ip $usr_interface_selection
+	./suricata/ids-setup-script.sh $pi_ip $usr_interface_selection
 
 elif [[ $setup_choice == 2 || $setup_choice == "IPS" ]]; then
 	echo -e "\nYou have chosen to setup Intrustion Prevention System (IPS)."
