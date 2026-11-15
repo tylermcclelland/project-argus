@@ -34,8 +34,8 @@ else
     echo "Suricata was installed!"
     #show version 
     echo "Version: "
-    sudo suricata --build-info | head -n 1 #in my --build-info output, version was on line one so -n 1 TODO: change this to a grep?
-
+    #sudo suricata --build-info | head -n 1 #in my --build-info output, version was on line one so -n 1 TODO: change this to a grep?
+	sudo suricata --build info | grep -m 1 "version"
     #see if suricata is running
     echo "Seeing if suricata is running..."
     sudo systemctl status suricata | grep 'Active: active (running)'
@@ -50,7 +50,7 @@ else
 
 fi
 
-# ensuring suricata has a default ruleset loaded
+# ensuring suricata has a default ruleset loaded (as suricata-update will place a suricata.rules in var/lib/suricata/rules)
 echo -e "Loading a default ruleset..."
 #suricata-update should've been downloaded when we installed Suricata, but adding a quick check
 sudo suricata-update -V
@@ -61,9 +61,8 @@ if [ $tmp_exit_code -gt 0 ]; then
 	sudo suricata-update
 	echo "suricata-update installed"
 	sudo suricata-update -V
-#else
-	#echo "suricata-update found!"
-	#sudo suricata-update -V
+else
+	echo "suricata-update found!"
 fi
 # "basic setup"/configuration
 # the -i.bak flag should make a backup file before editing/changing the file
@@ -95,7 +94,9 @@ fi
 
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
-	#TODO: quick fix, find out how to grab selection withou tbeing case sensitive UPDATE: just assuming they'll select the num, or type it upper or lower case still TODO!
+	# TODO: quick fix, find out how to grab selection without being case sensitive 
+	# UPDATE: implementations look convoluted on bash forums... kicking this can down the road and 
+	#         just assuming they'll provide one of the three options: num, type it upper or lower case... still TODO!
 	echo "Which interface do you want to setup Suricata on?"
 	echo "1: WiFi (most common)"
 	echo "2: Ethernet (if you connect to your router via a LAN cable)"
@@ -149,7 +150,6 @@ until [ $tmp_bool -eq 1 ]; do
 	fi
 done
 
-#TODO: Inital IP grab bug fixed, remove debug prints when done
 tmp_bool=0
 #ip_found=0 //will later track this to make our script more robust, doesn't matter for the demo rn
 until [ $tmp_bool -eq 1 ]; do
@@ -194,22 +194,17 @@ until [ $tmp_bool -eq 1 ]; do
 			echo -e "Ethernet ip grab not yet implemented \n"
 		fi
 
-	#echo "HERE 1"
 	elif [[ $usr_consent == "no"  || $usr_consent == "No" || $usr_consent -eq 2 ]]; then
-		#echo "HERE 2"
 		tmp_bool=1 # to exit initial yes/no check
 		tmp_bool_inner=0
 		until [ $tmp_bool_inner -eq 1 ]; do
-			#echo "HERE 3"
 			read -p "Please provide your IP: " pi_ip
-			read -p "You said $pi_ip. Is that right? [yes/no]" usr_consent # I"m thinking on the options that signal someone has more "technical depth," we can 
-			if [[ $usr_consent == "yes" || $usr_consent == "y" || $usr_consent == "Yes" ]]; then						   # just go with the [yes/no]. 
-				#echo "HERE 4"
+			read -p "You said $pi_ip. Is that right? [yes/no]" usr_consent 							# I'm thinking on the options that signal someone has more "technical depth," we can 
+			if [[ $usr_consent == "yes" || $usr_consent == "y" || $usr_consent == "Yes" ]]; then    # just go with the [yes/no]. 
 				tmp_bool_inner=1
 				echo "IP:$pi_ip stored."
 				continue
 			elif [[ $usr_consent == "no" || $usr_consent == "n" || $usr_consent == "No" ]]; then	
-				#echo "HERE 5"
 				tmp_bool_inner=0
 				echo "Okay, lets try again..."
 			fi
