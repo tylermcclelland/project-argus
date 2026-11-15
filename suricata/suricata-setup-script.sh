@@ -280,7 +280,7 @@ until [ $tmp_bool -eq 1 ]; do
 		tmp_bool=1
 		read -p "You entered 'no', would you like to update the file location [y/n]: " file_update
 		tmp_inner_bool=0
-		until [ $tmp_inner_bool -eq 1]; do
+		until [ $tmp_inner_bool -eq 1 ]; do
 			if [[ $file_update == "yes" || $file_update == "y" || $file_update == "Y" || $file_update == "Yes" ]]; then
 				tmp_inner_bool=1
 				echo "You entered 'yes', updating default-rule-path..."
@@ -309,38 +309,68 @@ echo "The current rule-files being used at runtime:"
 # Print not just the first 2 lines
 sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
 
-read -p "The default is to only use the suricata.rules, does this match your setup? [yes/no]: " custom_input
-if [[ $custom_input == "yes" ]]; then
-	# check its only Suricata.rules
-	if [[ $(grep -A 2 '^rule-files:' suricata/suricata_mock.yaml | grep '^  - ' | grep -vc '^  - suricata\.rules$') -eq 0 ]]; then
-		echo "rule-files category matches! Continuing setup..."
-	else
-		echo "You entered 'yes', but your rule-files is currently set up as:"
-		sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
-		read -p "Would you like to update to the default? [yes/no]: " update_rules
-		if [[ $update_rules == "yes" ]]; then
-			echo "Updating rule files..."
-			sed -i '/^rule-files:/,/^[^ ]/{/^  - suricata\.rules$/!{/^  - /d;}}' suricata/suricata_mock.yaml
-			# debug
-			sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
-			echo "The rule files have been updated! Continuing setup..."
+read -p "The default is to only use the suricata.rules, does this match your setup? [y/n]: " custom_input
+
+tmp_bool=0
+until [ $tmp_bool -eq 1 ]; do
+	if [[ $custom_input == "yes" || $custom_input == "y" || $custom_input == "Y" || $custom_input == "Yes" ]]; then
+		tmp_bool=1
+		# check its only Suricata.rules
+		if [[ $(grep -A 2 '^rule-files:' suricata/suricata_mock.yaml | grep '^  - ' | grep -vc '^  - suricata\.rules$') -eq 0 ]]; then
+			echo "rule-files category matches! Continuing setup..."
 		else
-			echo "You entered 'no', your rule-files will not be updated. Continuing setup..."
+			echo "You entered 'yes', but your rule-files is currently set up as:"
+			sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
+			read -p "Would you like to update to the default? [y/n]: " update_rules
+
+			tmp_inner_bool=0
+
+			until [ $tmp_inner_bool -eq 1]; do
+				if [[ $update_rules == "yes" || $update_rules == "y" || $update_rules == "Y" || $update_rules == "Yes" ]]; then
+					tmp_inner_bool=1
+					echo "Updating rule files..."
+					sed -i '/^rule-files:/,/^[^ ]/{/^  - suricata\.rules$/!{/^  - /d;}}' suricata/suricata_mock.yaml
+					# debug
+					sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
+					echo "The rule files have been updated! Continuing setup..."
+				elif [[ $update_rules == "no" || $update_rules == "n" || $update_rules == "N" || $update_rules == "No" ]]; then
+					tmp_inner_bool=1
+					echo "You entered 'no', your rule-files will not be updated. Continuing setup..."
+				else
+					echo "You entered $update_rules, which is not a valid input. Please try again: "
+					echo "You entered 'yes', but your rule-files is currently set up as:"
+		                        sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
+                		        read -p "Would you like to update to the default? [y/n]: " update_rules
+				fi
+			done
 		fi
-	fi
-else
-	read -p "You entered 'no', would you like to remove the custom path file? [yes/no]: " remove_input
-	if [[ $remove_input == "yes" ]]; then
-		echo "You entered 'yes', the custom rule files will be removed at this time..."
-		sed -i '/^rule-files:/,/^[^ ]/{/^  - suricata\.rules$/!{/^  - /d;}}' suricata/suricata_mock.yaml
-		# debug
-		echo "The new rule files: "
-		sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
-		echo "The rule files have been updated! Continuing setup..."
+	elif [[ $custom_input == "no" || $custom_input == "n" || $custom_input == "No" || $custom_input == "N" ]]; then
+		tmp_bool=1
+		read -p "You entered 'no', would you like to remove the custom path file? [y/n]: " remove_input
+
+		tmp_inner_bool=0
+		until [ $tmp_inner_bool -eq 1 ]; do
+			if [[ $remove_input == "yes" || $remove_input == "y" || $remove_input == "Yes" || $remove_input == "Y" ]]; then
+				tmp_inner_bool=1
+				echo "You entered 'yes', the custom rule files will be removed at this time..."
+				sed -i '/^rule-files:/,/^[^ ]/{/^  - suricata\.rules$/!{/^  - /d;}}' suricata/suricata_mock.yaml
+				# debug
+				echo "The new rule files: "
+				sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
+				echo "The rule files have been updated! Continuing setup..."
+			elif [[ $remove_input == "n" || $remove_input == "no" || $remove_input == "N" || $remove_input == "No" ]]; then
+				tmp_inner_bool=1
+				echo "You entered 'no', the rule-files will not be updated at this time. Continuing setup..."
+			else
+				echo "You entered $remove_input, which is not a valid input. Please try again: "
+				read -p "You entered 'no', would you like to remove the custom path file? [y/n]: " remove_input
+			fi
+		done
 	else
-		echo "You entered 'no', the rule-files will not be updated at this time. Continuing setup..."
+		echo "You entered $custom_input, which is not a valid input. Please try again: "
+		read -p "The default is to only use the suricata.rules, does this match your setup? [y/n]: " custom_input
 	fi
-fi
+done
 
 # Update the Suricata rules before starting
 
@@ -362,33 +392,41 @@ echo "2: Intrusion Prevention System (IPS) - Will alert and/or block network tra
 echo "** NOTE: IPS Mode is only recommended for those who have a good understanding of computer networks **"
 read -p "Enter your choice (# or abbreviation): " setup_choice
 
-if [[ $setup_choice == 1 || $setup_choice == "IDS" ]]; then
-# Check if iptables installed, install if not and delete all NFQUEUE rules (if any) to avoid denying pkts
+tmp_bool=0
 
-	if ! command -v iptables &> /dev/null; then
-        	echo "iptables not installed...installing for future use."
-        	sudo apt update && sudo apt install iptables
-        	tmp_exit_code=$?
-        	if [ $tmp_exit_code -gt 0 ]; then
-                	echo -e "iptables had an issue installing... Exit code: $tmp_exit_code\n"
-        	else
-                	echo -e "iptables was successfully installed!\n"
+until [ $tmp_bool -eq 1 ]; do
+	if [[ $setup_choice == 1 || $setup_choice == "IDS" || $setup_choice == "ids" ]]; then
+	tmp_bool=1
+	# Check if iptables installed, install if not and delete all NFQUEUE rules (if any) to avoid denying pkts
+		if ! command -v iptables &> /dev/null; then
+        		echo "iptables not installed...installing for future use."
+        		sudo apt update && sudo apt install iptables
+        		tmp_exit_code=$?
+        		if [ $tmp_exit_code -gt 0 ]; then
+                		echo -e "iptables had an issue installing... Exit code: $tmp_exit_code\n"
+        		else
+                		echo -e "iptables was successfully installed!\n"
+        		fi
         	fi
-        fi
-	
-	# if already set installed, delete any rules that were set up
-        sudo iptables -F INPUT
-        sudo iptables -F OUTPUT
-	
-	echo -e "\nYou have chosen to setup Intrusion Detection System (IDS)."
-	echo "Starting IDS configuration..."
-	./suricata/ids-setup-script.sh $pi_ip $usr_interface_selection
+		# if already set installed, delete any rules that were set up
+        	sudo iptables -F INPUT
+        	sudo iptables -F OUTPUT
 
-elif [[ $setup_choice == 2 || $setup_choice == "IPS" ]]; then
-	echo -e "\nYou have chosen to setup Intrustion Prevention System (IPS)."
-	echo "Starting IPS configuraiton..."
-	./suricata/ips-setup-script.sh
-else
-	echo -e "\nYou entered $setup_choice, which is not a valid answer."
-fi
+		echo -e "\nYou have chosen to setup Intrusion Detection System (IDS)."
+		echo "Starting IDS configuration..."
+		./suricata/ids-setup-script.sh $pi_ip $usr_interface_selection
 
+	elif [[ $setup_choice == 2 || $setup_choice == "IPS" || $setup_choice == "ips" ]]; then
+		tmp_bool=1
+		echo -e "\nYou have chosen to setup Intrustion Prevention System (IPS)."
+		echo "Starting IPS configuraiton..."
+		./suricata/ips-setup-script.sh
+	else
+		echo -e "\nYou entered $setup_choice, which is not a valid answer. Please try again: "
+		echo -e "\nWhat configuration type would you like to install?:"
+	echo "1: Intrusion Detection System (IDS) - Will alert but not block network traffic "
+	echo "2: Intrusion Prevention System (IPS) - Will alert and/or block network traffic ('advanced' mode)" #idk if we should table the IPS mode... y>
+	echo "** NOTE: IPS Mode is only recommended for those who have a good understanding of computer networks **"
+	read -p "Enter your choice (# or abbreviation): " setup_choice
+	fi
+done
