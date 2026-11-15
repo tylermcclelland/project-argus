@@ -26,39 +26,39 @@ else
 fi
 
 echo -e "\nChecking that NFQueue rules are uncommented in suricata.yaml..."
-grep -A 8 "nfq:" suricata_mock.yaml
+grep -A 8 "nfq:" suricata/suricata_mock.yaml
 
 # check mode: accept
-if grep -qE '^[[:space:]]*#[[:space:]]*mode:[[:space:]]*accept' suricata_mock.yaml; then
+if grep -qE '^[[:space:]]*#[[:space:]]*mode:[[:space:]]*accept' suricata/suricata_mock.yaml; then
 	echo "'mode' currently commented. Updating to uncommented..."
-	sed -i.bak '/nfq:/,/^[^[:space:]#]/ s/^[[:space:]]*#[[:space:]]*\(mode:[[:space:]]*accept\)/  \1/' suricata_mock.yaml
+	sed -i.bak '/nfq:/,/^[^[:space:]#]/ s/^[[:space:]]*#[[:space:]]*\(mode:[[:space:]]*accept\)/  \1/' suricata/suricata_mock.yaml
 	echo "'mode' is no longer commented. Continuing checks..."
 else
 	echo "'mode' already uncommented. Continuing checks..."
 fi
 
 # check repeat-mark: 1
-if grep -qE '^[[:space:]]*#[[:space:]]*repeat-mark:[[:space:]]*1' suricata_mock.yaml; then
+if grep -qE '^[[:space:]]*#[[:space:]]*repeat-mark:[[:space:]]*1' suricata/suricata_mock.yaml; then
         echo "'repeat-mark' currently commented. Updating to uncommented..."
-        sed -i.bak 's/^[[:space:]]*#[[:space:]]*repeat-mark:/ repeat-mark:/' suricata_mock.yaml
+        sed -i.bak 's/^[[:space:]]*#[[:space:]]*repeat-mark:/ repeat-mark:/' suricata/suricata_mock.yaml
         echo "'repeat-mark' is no longer commented. Continuing checks..."
 else
         echo "'repeat-mark' already uncommented. Continuing checks..."
 fi
 
 # check repeat-mask: 1
-if grep -qE '^[[:space:]]*#[[:space:]]*repeat-mask:[[:space:]]*1' suricata_mock.yaml; then
+if grep -qE '^[[:space:]]*#[[:space:]]*repeat-mask:[[:space:]]*1' suricata/suricata_mock.yaml; then
         echo "'repeat-mask' currently commented. Updating to uncommented..."
-        sed -i.bak 's/^[[:space:]]*#[[:space:]]*repeat-mask:/ repeat-mask:/' suricata_mock.yaml
+        sed -i.bak 's/^[[:space:]]*#[[:space:]]*repeat-mask:/ repeat-mask:/' suricata/suricata_mock.yaml
         echo "'repeat-mask' is no longer commented. Continuing checks..."
 else
         echo "'repeat-mask' already uncommented. Continuing checks..."
 fi
 
 # check route-queue 2
-if grep -qE '^[[:space:]]*#[[:space:]]*route-queue:[[:space:]]*2' suricata_mock.yaml; then
+if grep -qE '^[[:space:]]*#[[:space:]]*route-queue:[[:space:]]*2' suricata/suricata_mock.yaml; then
         echo "'route-queue' currently commented. Updating to uncommented..."
-        sed -i.bak 's/^[[:space:]]*#[[:space:]]*route-queue:/ route-queue:/' suricata_mock.yaml
+        sed -i.bak 's/^[[:space:]]*#[[:space:]]*route-queue:/ route-queue:/' suricata/suricata_mock.yaml
         echo "'route-queue' is no longer commented. Continuing checks..."
 else
         echo "'route-queue' already uncommented. Continuing checks..."
@@ -68,30 +68,33 @@ fi
 # grep -A 8 "nfq:" suricata_mock.yaml
 
 # Check they are not wanting to use a custom rule set
-current_rule_path=$(grep "default-rule-path" suricata_mock.yaml)
+current_rule_path=$(grep "default-rule-path" suricata/suricata_mock.yaml)
 echo -e "\nYour default rule path is currently set to: \n$current_rule_path"
-read -p "Are you wanting to stay with this rule path or switch to custom rule path? [stay/switch]: " rule_choice
+echo "Are you wanting to stay with this rule path or switch to custom rule path?"
+echo "1. Stay"
+echo "2. Switch"
+read -p "Your choice: " rule_choice
 
 # get a boolean that = 1 if updates were made so it doesnt update suricata rules every time
 updated_suricata_rules=0
 
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
-	if [[ $rule_choice == "stay" ]]; then
+	if [[ $rule_choice == "stay" || $rule_choice == 1 || $rule_choice == "Stay" ]]; then
 		tmp_bool=1
 		echo -e "You selected to stay on this rule path, continuing without update...\n"
-	elif [[ $rule_choice == "switch" ]]; then
+	elif [[ $rule_choice == "switch" || $rule_choice == 2 || $rule_choice == "Switch" ]]; then
+		tmp_bool=1
 		def_rule_path="default-rule-path:.*"
 		updated_suricata_rules=1
 		read -p "You chose to switch to a custom rule path. Please enter the path you would like to use instead: " new_path
-		tmp_bool=1
 		tmp_inner_bool=0
 		until [ $tmp_inner_bool -eq 1 ]; do
-			read -p "You entered $new_path, is this the correct path? [yes/no]: " user_input
-			if [[ $user_input == "yes" ]]; then
+			read -p "You entered $new_path, is this the correct path? [y/n]: " user_input
+			if [[ $user_input == "yes"  || $user_input == "y" || $user_input == "Y" || $user_input == "Yes" ]]; then
 				tmp_inner_bool=1
 				update_rule_path="default-rule-path: $new_path"
-				sudo sed -i.bak "0,/$def_rule_path/s|$def_rule_path|$update_rule_path|" suricata_mock.yaml
+				sudo sed -i.bak "0,/$def_rule_path/s|$def_rule_path|$update_rule_path|" suricata/suricata_mock.yaml
 				echo "The rule path has been updated! Restarting Suricata to update rule path..."
 				sudo systemctl restart suricata
 				echo -e "Suricata has been restarted! Continuing setup...\n"
@@ -101,21 +104,25 @@ until [ $tmp_bool -eq 1 ]; do
 		done
 	else
 		echo "You said $rule_choice, which is not a valid choice."
-		echo "Please enter 'stay' or 'switch' when trying again..."
-		read -p "Are you wanting to stay with this rule path or switch to custom rule path? [stay/switch]: " rule_choice
+		echo "Please enter 'stay'/'1' or 'switch'/'2' when trying again..."
+		echo -e "\nYour default rule path is currently set to: \n$current_rule_path"
+		echo "Are you wanting to stay with this rule path or switch to custom rule path?"
+		echo "1. Stay"
+		echo "2. Switch"
+		read -p "Your choice: " rule_choice
 	fi
 done
 
 # Check if user wants to add custom rules for IPS mode
 echo "The current rule-files being used at runtime:"
 # Print not just the first 2 lines
-sed -n '/^rule-files:/,/^[^ ]/p' suricata_mock.yaml
+sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
 
-read -p "These are the rule-files currently used at runtime. Would you like to add a custom rule file? [yes/no]: " add_custom
+read -p "These are the rule-files currently used at runtime. Would you like to add a custom rule file? [y/n]: " add_custom
 
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
-	if [ $add_custom == "yes" ]; then
+	if [[ $add_custom == "yes" || $add_custom == "y" || $add_custom == "Y" || $add_custom == "Yes" ]]; then
 		updated_suricata_rules=1
 		tmp_bool=1
 		read -p "You entered 'yes', please enter the file path for your custom rules file: " custom_file_path
@@ -123,35 +130,35 @@ until [ $tmp_bool -eq 1 ]; do
 		until [ $tmp_inner_bool -eq 1 ]; do
 			echo "You entered the following file path:"
 			echo $custom_file_path
-			read -p "Is this the correct file path? [yes/no]: " correct_path
-			if [ $correct_path == "yes" ]; then
+			read -p "Is this the correct file path? [y/n]: " correct_path
+			if [[ $correct_path == "yes" || $correct_path == "y" || $correct_path == "Yes" || $correct_path == "Y" ]]; then
 				tmp_inner_bool=1
 				echo "You said 'yes', adding to the end of the Suricata rule-files..."
 				# update path using awk to append to end
 				sudo awk -v rule="$custom_file_path" '{ lines[NR]=$0; if (/^rule-files:/) in_rules=1; else if (in_rules && /^[^ ]/) in_rules=0; else if (in_rules && /^  - /) last=NR } END { for (i=1; i<=NR; i++) { print lines[i]; if (i==last) print "  - " rule } }' suricata_mock.yaml > /tmp/suricata_mock.yaml && sudo cp /tmp/suricata_mock.yaml suricata_mock.yaml
 				echo "The rule path has been added! The current rule-files are now:"
-				sed -n '/^rule-files:/,/^[^ ]/p' suricata_mock.yaml
+				sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
 			else
 				echo "You said 'no', please find the correct file path and enter again..."
 				read -p "What is the file path for your custom rules file?: " custom_file_path
 			fi
 		done
-	elif [ $add_custom == "no" ]; then
+	elif [[ $add_custom == "no" || $add_custom == "n" || $add_custom == "No" || $add_custom == "N" ]]; then
 		tmp_bool=1
 		echo -e "You entered 'no', so no custom rule-files will be added at this time. Continuing setup...\n"
 	else
 		echo -e "You entered '$add_custom', which is not a valid input. Please enter 'yes' or 'no'.\n"
-		read -p "These are the rule-files currently used at runtime. Would you like to add a custom rule file? [yes/no]: " add_custom
+		read -p "These are the rule-files currently used at runtime. Would you like to add a custom rule file? [y/n]: " add_custom
 	fi
 done
 
 # only run updates if needed
-if [ $updated_suricata_rules -eq 1 ]; then
+if [[ $updated_suricata_rules -eq 1 ]]; then
 	echo "The default rule path or a custom file has been added, updating Suricata rules..."
-	rule_path=$(grep -m 1 "default-rule-path:" suricata_mock.yaml | awk '{print $2}')
+	rule_path=$(grep -m 1 "default-rule-path:" suricata/suricata_mock.yaml | awk '{print $2}')
 	sudo suricata-update -o $rule_path
 	tmp_exit_code=$?
-	if [ $tmp_exit_code -gt 0 ]; then
+	if [[ $tmp_exit_code -gt 0 ]]; then
 		echo "Suricata has failed to update and test your rules. Exit code: $tmp_exit_code"
 	else
 		echo -e "Suricata has successfully updated and tested your rules!\n"
@@ -167,15 +174,15 @@ sudo iptables -vnL
 
 # Tell user how to start and allow them to opt into auto start
 echo -e "\nTo start Suricata in IPS mode, type 'sudo suricata -c ~/suricata_mock.yaml -q 2'"
-read -p "Would you like the script to start IPS mode for you? [yes/no]: " run_ips
+read -p "Would you like the script to start IPS mode for you? [y/n]: " run_ips
 
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
-	if [ $run_ips == "yes" ]; then
+	if [[ $run_ips == "yes" || $run_ips == "y" || $run_ips == "Yes" || $run_ips == "Y" ]]; then
 		tmp_bool=1
 		echo "You entered 'yes', starting Suricata in IPS mode!"
 		sudo suricata -c ~/suricata_mock.yaml -q 2
-	elif [ $run_ips == "no" ]; then
+	elif [[ $run_ips == "no" || $run_ips == "No" || $run_ips == "n" || $run_ips == "N" ]]; then
 		tmp_bool=1
 		echo "You entered 'no'. Suricata will not begin at this time."
 	else
