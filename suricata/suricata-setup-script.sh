@@ -101,9 +101,7 @@ until [ $tmp_bool -eq 1 ]; do
 	echo "1: WiFi (most common)"
 	echo "2: Ethernet (if you connect to your router via a LAN cable)"
 	read usr_interface_selection
-	#if [[ $usr_interface_selection -eq 0 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" || $usr_interface_selection -eq 1 || $usr_interface_selection == "Ethernet" || $usr_interface_selection == "ethernet" ]]; then
-	#	echo -e "Okay, starting setup on $usr_interface_selection... \n"
-	# tmp_bool=1
+
 	if [[ $usr_interface_selection -eq 1 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" ]]; then
 		tmp_bool=1
 		echo -e "Okay, starting setup on WiFi... \n"
@@ -151,7 +149,7 @@ until [ $tmp_bool -eq 1 ]; do
 done
 
 tmp_bool=0
-#ip_found=0 //will later track this to make our script more robust, doesn't matter for the demo rn
+ip_found=0 
 until [ $tmp_bool -eq 1 ]; do
 	echo "Do you allow us to search for your IP?"
 	echo "1: Yes (Easiest and most common) "
@@ -196,17 +194,27 @@ until [ $tmp_bool -eq 1 ]; do
 
 	elif [[ $usr_consent == "no"  || $usr_consent == "No" || $usr_consent -eq 2 ]]; then
 		tmp_bool=1 # to exit initial yes/no check
-		tmp_bool_inner=0
+		tmp_bool_inner=0 # to exit on users conformatino of their IP
 		until [ $tmp_bool_inner -eq 1 ]; do
+			#defining IP addr as an IPv4 addr. Confirming we have a valid IP
 			read -p "Please provide your IP: " pi_ip
-			read -p "You said $pi_ip. Is that right? [yes/no]" usr_consent 							# I'm thinking on the options that signal someone has more "technical depth," we can 
-			if [[ $usr_consent == "yes" || $usr_consent == "y" || $usr_consent == "Yes" ]]; then    # just go with the [yes/no]. 
-				tmp_bool_inner=1
-				echo "IP:$pi_ip stored."
-				continue
-			elif [[ $usr_consent == "no" || $usr_consent == "n" || $usr_consent == "No" ]]; then	
-				tmp_bool_inner=0
-				echo "Okay, lets try again..."
+			# TODO: dealing with a bug where the $pi_ip check is accepting IP addresses it shouldn't... 
+			#		it still accepts valid IPs so I'm not commenting it out. Just note it isn't stopping invalid IPs rgiht now :(
+			if [[ $pi_ip =~ [0-255\.0-255\.0-255\.0-255] ]]; then
+				#tmp_bool_inner=1
+				read -p "You said: $pi_ip is that right? [yes/no]: " usr_consent 						# I'm thinking on the options that signal someone has more "technical depth," we can 
+				if [[ $usr_consent == "yes" || $usr_consent == "y" || $usr_consent == "Yes" ]]; then    # just go with the [yes/no]. 
+					tmp_bool_inner=1
+					echo -e "IP: $pi_ip stored. \n"
+					continue
+				elif [[ $usr_consent == "no" || $usr_consent == "n" || $usr_consent == "No" ]]; then	
+					tmp_bool_inner=0
+					echo -e "Okay, lets try again...\n"
+				fi
+			else
+				ip_found=0
+				echo "You must provide an IPv4 address of the form: 0.0.0.0"
+				echo -e "You provided: $pi_ip ... Try again \n"
 			fi
 		done
 	else
