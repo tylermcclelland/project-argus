@@ -6,6 +6,10 @@
 # the existing suricata.yaml which may have IDS configurations enabled) seemed wesy to get working. Time permitting, I would like to think of a more
 # "elegant" solution.
 
+# arrays to store valid inputs
+# NOTE: defining yes to always be 1 in a prompt and 2 to always be no
+yes_arr=({y,Y}{e,E}{s,S} y Y 1)
+no_arr=({n,N}{o,O} n N 2)
 
 # For testing purposes
 echo "IDS setup script running!"
@@ -20,7 +24,7 @@ echo "NOTE: Your current suricata configuration (/etc/suricata/suricata.yaml) wi
 read usr_choice
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
-    if [[ $usr_choice == "yes" ]]; then
+    if [[ ${yes_arr[@]} =~ ${usr_choice} ]]; then
         tmp_bool=1
         echo "will add implementation to back up your current yaml for later use"
         echo -e "Please provide the path of the .yaml you want to save: "
@@ -43,7 +47,7 @@ until [ $tmp_bool -eq 1 ]; do
             echo "Your file wasn't saved... Make sure you're giving the right paths/filenames"
         fi
 
-    elif [[ $usr_choice == "no" ]]; then
+    elif [[ ${no_arr[@]} =~ ${usr_choice} ]]; then
         tmp_bool=1
         echo "Okay, replacing your suricata.yaml with an IDS friendly suricata.yaml"
         #sudo cp suricata/other-files/temp-ids.yaml /etc/suricata/suricata.yaml //to be used in final script
@@ -91,7 +95,7 @@ echo -e "\nYour default rule path is currently set to: \n$current_rule_path"
 
 read -p "The default rules file is /var/lib/suricata/rules. Does this match your file location? [yes/no]: " rule_input
 
-if [[ $rule_input == "yes" ]]; then
+if [[ ${yes_arr[@]} =~ ${rule_input} ]]; then
 	echo "You entered 'yes', checking that the default-rule-path matches..."
 	# update to real file in future :)
 	if grep -q "default-rule-path: /var/lib/suricata/rules" suricata/suricata_mock.yaml; then
@@ -113,7 +117,7 @@ if [[ $rule_input == "yes" ]]; then
 	fi
 else
 	read -p "You entered 'no', would you like to update the file location [yes/no]: " file_update
-	if [[ $file_update == "yes" ]]; then
+	if [[ ${yes_arr[@]} =~ ${file_update} ]]; then
 		echo "You entered 'yes', updating default-rule-path..."
 		def_rule_path="default-rule-path:.*"
 		update_rule_path="default-rule-path: /var/lib/suricata/rules"
