@@ -407,22 +407,7 @@ tmp_bool=0
 
 until [ $tmp_bool -eq 1 ]; do
 	if [[ ${ids_arr[@]} =~ ${setup_choice} ]]; then
-	tmp_bool=1
-	# Check if iptables installed, install if not and delete all NFQUEUE rules (if any) to avoid denying pkts
-		if ! command -v iptables &> /dev/null; then
-        		echo "iptables not installed...installing for future use."
-        		sudo apt update && sudo apt install iptables
-        		tmp_exit_code=$?
-        		if [ $tmp_exit_code -gt 0 ]; then
-                		echo -e "iptables had an issue installing... Exit code: $tmp_exit_code\n"
-        		else
-                		echo -e "iptables was successfully installed!\n"
-        		fi
-        	fi
-		# if already set installed, delete any rules that were set up
-        	sudo iptables -F INPUT
-        	sudo iptables -F OUTPUT
-
+		tmp_bool=1
 		echo -e "\nYou have chosen to setup Intrusion Detection System (IDS)."
 		echo "Starting IDS configuration..."
 		./suricata/ids-setup-script.sh $pi_ip $usr_interface_selection
@@ -435,9 +420,9 @@ until [ $tmp_bool -eq 1 ]; do
 	else
 		echo -e "\nYou entered $setup_choice, which is not a valid answer. Please try again: "
 		echo -e "\nWhat configuration type would you like to install?:"
-	echo "1: Intrusion Detection System (IDS) - Will alert but not block network traffic "
-	echo "2: Intrusion Prevention System (IPS) - Will alert and/or block network traffic ('advanced' mode)" #idk if we should table the IPS mode... y>
-	echo "** NOTE: IPS Mode is only recommended for those who have a good understanding of computer networks **"
-	read -p "Enter your choice (# or abbreviation): " setup_choice
+		echo "1: Intrusion Detection System (IDS) - Will alert but not block network traffic "
+		echo "2: Intrusion Prevention System (IPS) - Will alert and/or block network traffic ('advanced' mode)" #idk if we should table the IPS mode... y>
+		echo "** NOTE: IPS Mode is only recommended for those who have a good understanding of computer networks **"
+		read -p "Enter your choice (# or abbreviation): " setup_choice
 	fi
 done
