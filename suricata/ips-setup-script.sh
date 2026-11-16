@@ -11,6 +11,14 @@
 # information and setup can be found at the ~36 minute mark of this
 # video: https://www.youtube.com/watch?v=8Q3Nhyvh-1I
 
+# valid inputs to be checked against
+yes_arr=({y,Y}{e,E}{s,S} 1)
+# echo "${yes_arr[@]}"
+no_arr=({n,N}{o,O} 2)
+# echo "${no_arr[@]}"
+stay_arr=({s,S}{t,T}{a,A}{y,Y} 1)
+switch_arr=({s,S}{w,W}{i,I}{t,T}{c,C}{h,H} 2)
+
 # Confirm that the script has executed
 echo "Intrusion Prevention System (IPS) script is now running!"
 
@@ -80,10 +88,10 @@ updated_suricata_rules=0
 
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
-	if [[ $rule_choice == "stay" || $rule_choice == 1 || $rule_choice == "Stay" ]]; then
+	if [[ ${stay_arr[@]} =~ ${rule_choice} ]]; then
 		tmp_bool=1
 		echo -e "You selected to stay on this rule path, continuing without update...\n"
-	elif [[ $rule_choice == "switch" || $rule_choice == 2 || $rule_choice == "Switch" ]]; then
+	elif [[ ${switch_arr[@]} =~ ${rule_choice} ]]; then
 		tmp_bool=1
 		def_rule_path="default-rule-path:.*"
 		updated_suricata_rules=1
@@ -91,7 +99,7 @@ until [ $tmp_bool -eq 1 ]; do
 		tmp_inner_bool=0
 		until [ $tmp_inner_bool -eq 1 ]; do
 			read -p "You entered $new_path, is this the correct path? [y/n]: " user_input
-			if [[ $user_input == "yes"  || $user_input == "y" || $user_input == "Y" || $user_input == "Yes" ]]; then
+			if [[ ${yes_arr[@]} =~ ${user_input} ]]; then
 				tmp_inner_bool=1
 				update_rule_path="default-rule-path: $new_path"
 				sudo sed -i.bak "0,/$def_rule_path/s|$def_rule_path|$update_rule_path|" suricata/suricata_mock.yaml
@@ -104,7 +112,7 @@ until [ $tmp_bool -eq 1 ]; do
 		done
 	else
 		echo "You said $rule_choice, which is not a valid choice."
-		echo "Please enter 'stay'/'1' or 'switch'/'2' when trying again..."
+		echo "Please enter 'stay' (1) or 'switch' (2) when trying again..."
 		echo -e "\nYour default rule path is currently set to: \n$current_rule_path"
 		echo "Are you wanting to stay with this rule path or switch to custom rule path?"
 		echo "1. Stay"
@@ -122,7 +130,7 @@ read -p "These are the rule-files currently used at runtime. Would you like to a
 
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
-	if [[ $add_custom == "yes" || $add_custom == "y" || $add_custom == "Y" || $add_custom == "Yes" ]]; then
+	if [[ ${yes_arr[@]} =~ ${add_custom} ]]; then
 		updated_suricata_rules=1
 		tmp_bool=1
 		read -p "You entered 'yes', please enter the file path for your custom rules file: " custom_file_path
@@ -131,7 +139,7 @@ until [ $tmp_bool -eq 1 ]; do
 			echo "You entered the following file path:"
 			echo $custom_file_path
 			read -p "Is this the correct file path? [y/n]: " correct_path
-			if [[ $correct_path == "yes" || $correct_path == "y" || $correct_path == "Yes" || $correct_path == "Y" ]]; then
+			if [[ ${yes_arr[@]} =~ ${correct_path} ]]; then
 				tmp_inner_bool=1
 				echo "You said 'yes', adding to the end of the Suricata rule-files..."
 				# update path using awk to append to end
@@ -143,7 +151,7 @@ until [ $tmp_bool -eq 1 ]; do
 				read -p "What is the file path for your custom rules file?: " custom_file_path
 			fi
 		done
-	elif [[ $add_custom == "no" || $add_custom == "n" || $add_custom == "No" || $add_custom == "N" ]]; then
+	elif [[ ${no_arr[@]} =~ ${add_custom} ]]; then
 		tmp_bool=1
 		echo -e "You entered 'no', so no custom rule-files will be added at this time. Continuing setup...\n"
 	else
@@ -178,11 +186,11 @@ read -p "Would you like the script to start IPS mode for you? [y/n]: " run_ips
 
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
-	if [[ $run_ips == "yes" || $run_ips == "y" || $run_ips == "Yes" || $run_ips == "Y" ]]; then
+	if [[ ${yes_arr[@]} =~ ${run_ips} ]]; then
 		tmp_bool=1
 		echo "You entered 'yes', starting Suricata in IPS mode!"
 		sudo suricata -c ~/suricata_mock.yaml -q 2
-	elif [[ $run_ips == "no" || $run_ips == "No" || $run_ips == "n" || $run_ips == "N" ]]; then
+	elif [[ ${no_arr[@]} =~ ${run_ips} ]]; then
 		tmp_bool=1
 		echo "You entered 'no'. Suricata will not begin at this time."
 	else
