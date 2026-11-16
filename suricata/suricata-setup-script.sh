@@ -9,6 +9,19 @@
 
 #NOTE: IT IS ASSUMED THIS WILL BE RUN FROM REPO ROOT (meaning project-argus)
 
+# arrays to store valid inputs. Surely there's a better way but this works, saves extra code, and makes sense. Replace if you find a better way
+# TODO: there should be 2^n (n is num of characters) combiniations per word so i'm missing some, low on time so will fix that later. Plenty of options for now...
+# NOTE: defining yes to always be 1 in a prompt and 2 to always be no
+yes_arr=(YES YEs Yes yes yEs yES yeS y Y 1) 
+no_arr=(NO No nO no n N 2)
+# NOTE: defining Wifi to always be 1 in a prompt and 2 to always be Ethernet
+wifi_arr=(WIFI WIFi WIfi Wifi wifi wifI wiFI wIFI wlan0 1) 
+eth_arr=(Eth Ethernet eth0 ethernet ETH 2)
+# NOte: defining IDS as 1 and IPS as 2
+ids_arr=(IDS IDs Ids ids iDS idS iDs IdS 1)
+ips_arr=(IPS IPs Ips ips iPS ipS iPs IpS 2)
+
+
 
 # making sure you're system's up to date
 echo "Ensuring system is up to date..."
@@ -34,8 +47,8 @@ else
     echo "Suricata was installed!"
     #show version 
     echo "Version: "
-    #sudo suricata --build-info | head -n 1 #in my --build-info output, version was on line one so -n 1 TODO: change this to a grep?
 	sudo suricata --build info | grep -m 1 "version"
+
     #see if suricata is running
     echo "Seeing if suricata is running..."
     sudo systemctl status suricata | grep 'Active: active (running)'
@@ -64,8 +77,6 @@ if [ $tmp_exit_code -gt 0 ]; then
 else
 	echo "suricata-update found!"
 fi
-# "basic setup"/configuration
-# the -i.bak flag should make a backup file before editing/changing the file
 
 echo -e "\nStarting basic configuration...\n"
 
@@ -102,7 +113,7 @@ until [ $tmp_bool -eq 1 ]; do
 	echo "2: Ethernet (if you connect to your router via a LAN cable)"
 	read usr_interface_selection
 
-	if [[ $usr_interface_selection -eq 1 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" ]]; then
+	if [[ ${wifi_arr[@]} =~ ${usr_interface_selection} ]]; then
 		tmp_bool=1
 		echo -e "Okay, starting setup on WiFi... \n"
 		# updating the .yaml to use the interface the user specified
@@ -124,7 +135,7 @@ until [ $tmp_bool -eq 1 ]; do
 			cat suricata/suricata_mock.yaml | grep "interface:" | head -n 1
 			echo -e "Your selected interface has been updated in suricata.yaml! \n"
 		fi
-	elif [[ $usr_interface_selection -eq 2 || $usr_interface_selection == "Ethernet" || $usr_interface_selection == "ethernet" ]]; then
+	elif [[ ${eth_arr[@]} =~ ${usr_interface_selection} ]]; then
 		tmp_bool=1
 		echo -e "Okay, starting setup on Ethernet... \n"
 		target_string="- interface:.*"
@@ -155,7 +166,7 @@ until [ $tmp_bool -eq 1 ]; do
 	echo "1: Yes (Easiest and most common) "
 	echo "2: No (You will have to go find the correct IP yourself)"
 	read usr_consent
-	if [[ $usr_consent == "yes"  || $usr_consent == "Yes" || $usr_consent -eq 1 ]]; then
+	if [[ ${yes_arr[@]} =~ ${usr_consent} ]]; then
 		tmp_bool=1 # to exit initial yes/no check
 		echo "Starting search for your IP..."
 		echo "Checking ip installation"
@@ -175,12 +186,12 @@ until [ $tmp_bool -eq 1 ]; do
 				echo "You'll have to give your IP"
 			fi
 		fi
-		if [[ $usr_interface_selection -eq 1 || $usr_interface_selection == "WiFi" || $usr_interface_selection == "wifi" ]]; then
+		if [[ ${wifi_arr[@]} =~ ${usr_interface_selection} ]]; then
 			#implement wifi ip grab
 			pi_ip=$(sudo ip addr show wlan0 | grep -m 1 "inet" | cut -c 10-21)
 			echo -e "WiFi: $pi_ip \n"
 			sudo ip link set wlan0 promisc on
-		elif [[ $usr_interface_selection -eq 2 || $usr_interface_selection == "Ethernet" || $usr_interface_selection == "ethernet" ]]; then
+		elif [[ ${eth_arr[@]} =~ ${usr_interface_selection} ]]; then
 			#implement eth0 ip grab 
 			# NOTE: ETH IP grab not yet implemented because we're assuming a user w/ an out of the box system (Morgan correct me if i'm wrong!) and on my 
 			# pi, eth is "down" and not setup (not showing an ipv4 addr), thus it is TBD if we are going to set it up for them in this script, or just 
@@ -192,7 +203,7 @@ until [ $tmp_bool -eq 1 ]; do
 			echo -e "Ethernet ip grab not yet implemented \n"
 		fi
 
-	elif [[ $usr_consent == "no"  || $usr_consent == "No" || $usr_consent -eq 2 ]]; then
+	elif [[ ${no_arr[@]} =~ ${usr_consent} ]]; then
 		tmp_bool=1 # to exit initial yes/no check
 		tmp_bool_inner=0 # to exit on users conformatino of their IP
 		until [ $tmp_bool_inner -eq 1 ]; do
@@ -202,12 +213,12 @@ until [ $tmp_bool -eq 1 ]; do
 			#		it still accepts valid IPs so I'm not commenting it out. Just note it isn't stopping invalid IPs rgiht now :(
 			if [[ $pi_ip =~ [0-255\.0-255\.0-255\.0-255] ]]; then
 				#tmp_bool_inner=1
-				read -p "You said: $pi_ip is that right? [yes/no]: " usr_consent 						# I'm thinking on the options that signal someone has more "technical depth," we can 
-				if [[ $usr_consent == "yes" || $usr_consent == "y" || $usr_consent == "Yes" ]]; then    # just go with the [yes/no]. 
+				read -p "You said: $pi_ip is that right? [yes/no]: " usr_consent 
+				if [[ ${yes_arr[@]} =~ ${usr_consent} ]]; then
 					tmp_bool_inner=1
 					echo -e "IP: $pi_ip stored. \n"
 					continue
-				elif [[ $usr_consent == "no" || $usr_consent == "n" || $usr_consent == "No" ]]; then	
+				elif [[ ${no_arr[@] =~ ${usr_consent}} ]]; then	
 					tmp_bool_inner=0
 					echo -e "Okay, lets try again...\n"
 				fi
@@ -247,7 +258,7 @@ echo -e "\nYour default rule path is currently set to: \n$current_rule_path"
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
 	read -p "The default rules file is /var/lib/suricata/rules. Does this match your file location? [y/n]: " rule_input
-	if [[ $rule_input == "y" || $rule_input == "yes" || $rule_input == "Y" || $rule_input == "Yes" ]]; then
+	if [[ ${yes_arr[@]} =~ ${rule_input} ]]; then
 		tmp_bool=1
 		echo "You entered 'yes', checking that the default-rule-path matches..."
 		# update to real file in future :)
@@ -260,14 +271,14 @@ until [ $tmp_bool -eq 1 ]; do
 			tmp_inner_bool=0
 			until [ $tmp_inner_bool -eq 1 ]; do
 				read -p "Would you like to update to the default? [y/n]: " update_input
-				if [[ $update_input == "yes" || $update_input == "y" || $update_input == "Yes" || $update_input == "Y" ]]; then
+				if [[ ${yes_arr[@]} =~ ${update_input} ]]; then
 					tmp_inner_bool=1
 					update_rule_path="default-rule-path: /var/lib/suricata/rules"
 					sudo sed -i.bak "0,/$def_rule_path/s|$def_rule_path|$update_rule_path|" suricata/suricata_mock.yaml
 					echo "The rule path has been updated! Restarting Suricata to update rule path..."
 					sudo systemctl restart suricata
 					echo "Suricata has been restarted! Continuing setup..."
-				elif [[ $update_input == "no" || $update_input == "n" || $update_input == "No" || $update_input == "N" ]]; then
+				elif [[ ${no_arr[@]} =~ ${update_input} ]]; then
 					tmp_inner_bool=1
 					echo -e "You entered 'no', the rule path will not be updated. Continuing setup..."
 				else
@@ -276,12 +287,12 @@ until [ $tmp_bool -eq 1 ]; do
 				fi
 			done
 		fi
-	elif [[ $rule_input == "n" || $rule_input == "no" || $rule_input == "N" || $rule_input == "No" ]]; then
+	elif [[ ${no_arr[@]} =~ ${rule_input} ]]; then
 		tmp_bool=1
 		read -p "You entered 'no', would you like to update the file location [y/n]: " file_update
 		tmp_inner_bool=0
 		until [ $tmp_inner_bool -eq 1 ]; do
-			if [[ $file_update == "yes" || $file_update == "y" || $file_update == "Y" || $file_update == "Yes" ]]; then
+			if [[ ${yes_arr[@]} =~ ${file_update} ]]; then
 				tmp_inner_bool=1
 				echo "You entered 'yes', updating default-rule-path..."
 				def_rule_path="default-rule-path:.*"
@@ -290,7 +301,7 @@ until [ $tmp_bool -eq 1 ]; do
 				echo "Rule path has been succesfully updated! Restarting Suricata to update rule path..."
 				sudo systemctl restart suricata
 				echo "Suricata has been restarted! Continuing setup..."
-			elif [[ $file_update == "no" || $file_update == "n" || $file_update == "No" || $file_update == "N" ]]; then
+			elif [[ ${no_arr[@]} =~ ${file_update} ]]; then
 				tmp_inner_bool=1
 				echo "You entered 'no', the default-rule-path will not be updated. Continuing setup..."
 			else
@@ -313,7 +324,7 @@ read -p "The default is to only use the suricata.rules, does this match your set
 
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
-	if [[ $custom_input == "yes" || $custom_input == "y" || $custom_input == "Y" || $custom_input == "Yes" ]]; then
+	if [[ ${yes_arr[@]} =~ ${custom_input} ]]; then
 		tmp_bool=1
 		# check its only Suricata.rules
 		if [[ $(grep -A 2 '^rule-files:' suricata/suricata_mock.yaml | grep '^  - ' | grep -vc '^  - suricata\.rules$') -eq 0 ]]; then
@@ -326,14 +337,14 @@ until [ $tmp_bool -eq 1 ]; do
 			tmp_inner_bool=0
 
 			until [ $tmp_inner_bool -eq 1]; do
-				if [[ $update_rules == "yes" || $update_rules == "y" || $update_rules == "Y" || $update_rules == "Yes" ]]; then
+				if [[ ${yes_arr[@]} =~ ${update_rules} ]]; then
 					tmp_inner_bool=1
 					echo "Updating rule files..."
 					sed -i '/^rule-files:/,/^[^ ]/{/^  - suricata\.rules$/!{/^  - /d;}}' suricata/suricata_mock.yaml
 					# debug
 					sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
 					echo "The rule files have been updated! Continuing setup..."
-				elif [[ $update_rules == "no" || $update_rules == "n" || $update_rules == "N" || $update_rules == "No" ]]; then
+				elif [[ ${no_arr[@]} =~ ${update_rules} ]]; then
 					tmp_inner_bool=1
 					echo "You entered 'no', your rule-files will not be updated. Continuing setup..."
 				else
@@ -344,13 +355,13 @@ until [ $tmp_bool -eq 1 ]; do
 				fi
 			done
 		fi
-	elif [[ $custom_input == "no" || $custom_input == "n" || $custom_input == "No" || $custom_input == "N" ]]; then
+	elif [[ ${no_arr[@]} =~ ${custom_input} ]]; then
 		tmp_bool=1
 		read -p "You entered 'no', would you like to remove the custom path file? [y/n]: " remove_input
 
 		tmp_inner_bool=0
 		until [ $tmp_inner_bool -eq 1 ]; do
-			if [[ $remove_input == "yes" || $remove_input == "y" || $remove_input == "Yes" || $remove_input == "Y" ]]; then
+			if [[ ${yes_arr[@]} =~ ${remove_input} ]]; then
 				tmp_inner_bool=1
 				echo "You entered 'yes', the custom rule files will be removed at this time..."
 				sed -i '/^rule-files:/,/^[^ ]/{/^  - suricata\.rules$/!{/^  - /d;}}' suricata/suricata_mock.yaml
@@ -358,7 +369,7 @@ until [ $tmp_bool -eq 1 ]; do
 				echo "The new rule files: "
 				sed -n '/^rule-files:/,/^[^ ]/p' suricata/suricata_mock.yaml
 				echo "The rule files have been updated! Continuing setup..."
-			elif [[ $remove_input == "n" || $remove_input == "no" || $remove_input == "N" || $remove_input == "No" ]]; then
+			elif [[ ${no_arr[@]} =~ ${remove_input} ]]; then
 				tmp_inner_bool=1
 				echo "You entered 'no', the rule-files will not be updated at this time. Continuing setup..."
 			else
@@ -395,7 +406,7 @@ read -p "Enter your choice (# or abbreviation): " setup_choice
 tmp_bool=0
 
 until [ $tmp_bool -eq 1 ]; do
-	if [[ $setup_choice == 1 || $setup_choice == "IDS" || $setup_choice == "ids" ]]; then
+	if [[ ${ids_arr[@]} =~ ${setup_choice} ]]; then
 	tmp_bool=1
 	# Check if iptables installed, install if not and delete all NFQUEUE rules (if any) to avoid denying pkts
 		if ! command -v iptables &> /dev/null; then
@@ -416,7 +427,7 @@ until [ $tmp_bool -eq 1 ]; do
 		echo "Starting IDS configuration..."
 		./suricata/ids-setup-script.sh $pi_ip $usr_interface_selection
 
-	elif [[ $setup_choice == 2 || $setup_choice == "IPS" || $setup_choice == "ips" ]]; then
+	elif [[ ${ips_arr[@]} =~ ${setup_choice} ]]; then
 		tmp_bool=1
 		echo -e "\nYou have chosen to setup Intrustion Prevention System (IPS)."
 		echo "Starting IPS configuraiton..."
