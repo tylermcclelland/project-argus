@@ -9,19 +9,19 @@
 
 #NOTE: IT IS ASSUMED THIS WILL BE RUN FROM REPO ROOT (meaning project-argus)
 
-# arrays to store valid inputs. Surely there's a better way but this works, saves extra code, and makes sense. Replace if you find a better way
-# TODO: there should be 2^n (n is num of characters) combiniations per word so i'm missing some, low on time so will fix that later. Plenty of options for now...
+# arrays to store valid inputs
 # NOTE: defining yes to always be 1 in a prompt and 2 to always be no
-yes_arr=(YES YEs Yes yes yEs yES yeS y Y 1) 
-no_arr=(NO No nO no n N 2)
+yes_arr=({y,Y}{e,E}{s,S} y Y 1)
+no_arr=({n,N}{o,O} n N 2)
+
 # NOTE: defining Wifi to always be 1 in a prompt and 2 to always be Ethernet
-wifi_arr=(WIFI WIFi WIfi Wifi wifi wifI wiFI wIFI wlan0 1) 
-eth_arr=(Eth Ethernet eth0 ethernet ETH 2)
-# NOte: defining IDS as 1 and IPS as 2
-ids_arr=(IDS IDs Ids ids iDS idS iDs IdS 1)
-ips_arr=(IPS IPs Ips ips iPS ipS iPs IpS 2)
+# NOTE: to add different valid ports in the future, put the 0's in curly braces. ex: eth0 and eth1 would be replace the 0 with {0,1}
+wifi_arr=({w,W}{i,I}{f,F}{i,I} {w,W}{l,L}{a,A}{n,N}0 1)
+eth_arr=({e,E}{t,T}{h,H} {e,E}{t,T}{h,H}{e,E}{r,R}{n,N}{e,E}{t,T} {e,E}{t,T}{h,H}0 2)
 
-
+# NOTE: defining IDS as 1 and IPS as 2
+ids_arr=({i,I}{d,D}{s,S} 1)
+ips_arr=({i,I}{p,P}{s,S} 2)
 
 # making sure you're system's up to date
 echo "Ensuring system is up to date..."
