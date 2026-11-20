@@ -51,7 +51,7 @@ until [ $tmp_bool -eq 1 ]; do
         tmp_bool=1
         echo "Okay, replacing your suricata.yaml with an IDS friendly suricata.yaml"
         #sudo cp suricata/other-files/temp-ids.yaml /etc/suricata/suricata.yaml //to be used in final script
-        sudo cp other-files/temp-ids.yaml suricata/suricata_mock.yaml #need to update this (and stuff like this) to have a consistent dir like: this project runs from /project-argus 
+        sudo cp other-files/temp-ids.yaml suricata/suricata_mock.yaml 
         tmp_exit_code=$?
         if [ $tmp_exit_code -eq 0 ]; then
             echo -e "New suricata.yaml succesfully saved to /etc/suricata/suricata.yaml! \n"
@@ -84,7 +84,7 @@ if [ $tmp_exit_code -gt 0 ]; then
 	echo "IP was unable to be updated. Exit code: $tmp_exit_code"
 	exit 1
 else
-	echo "IP address has been updated in suricata.yaml!" #TODO: eventually (not necessary for the demo) we should probably put a check here for a valid IP such that I cant say my IP is "potato"
+	echo "IP address has been updated in suricata.yaml!" 
 fi
 
 

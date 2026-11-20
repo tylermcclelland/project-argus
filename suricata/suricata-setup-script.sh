@@ -23,7 +23,7 @@ eth_arr=({e,E}{t,T}{h,H} {e,E}{t,T}{h,H}{e,E}{r,R}{n,N}{e,E}{t,T} {e,E}{t,T}{h,H
 ids_arr=({i,I}{d,D}{s,S} 1)
 ips_arr=({i,I}{p,P}{s,S} 2)
 
-# making sure you're system's up to date
+# making sure your system's up to date
 echo "Ensuring system is up to date..."
 
 sudo apt update && sudo apt upgrade -y
@@ -35,7 +35,7 @@ else
     echo "System up to date!"
 fi
 
-#actual Suricata install
+# actual Suricata install
 echo "Installing Suricata..."
 
 sudo apt-get install suricata -y 
@@ -65,7 +65,7 @@ fi
 
 # ensuring suricata has a default ruleset loaded (as suricata-update will place a suricata.rules in var/lib/suricata/rules)
 echo -e "Loading a default ruleset..."
-#suricata-update should've been downloaded when we installed Suricata, but adding a quick check
+# suricata-update should've been downloaded when we installed Suricata, but adding a quick check
 sudo suricata-update -V
 tmp_exit_code=$?
 if [ $tmp_exit_code -gt 0 ]; then
@@ -105,9 +105,7 @@ fi
 
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
-	# TODO: quick fix, find out how to grab selection without being case sensitive 
-	# UPDATE: implementations look convoluted on bash forums... kicking this can down the road and 
-	#         just assuming they'll provide one of the three options: num, type it upper or lower case... still TODO!
+	# determining the interface a user would like to run Suricata on
 	echo "Which interface do you want to setup Suricata on?"
 	echo "1: WiFi (most common)"
 	echo "2: Ethernet (if you connect to your router via a LAN cable)"
@@ -160,7 +158,6 @@ until [ $tmp_bool -eq 1 ]; do
 done
 
 tmp_bool=0
-ip_found=0 
 until [ $tmp_bool -eq 1 ]; do
 	echo "Do you allow us to search for your IP?"
 	echo "1: Yes (Easiest and most common) "
@@ -170,7 +167,7 @@ until [ $tmp_bool -eq 1 ]; do
 		tmp_bool=1 # to exit initial yes/no check
 		echo "Starting search for your IP..."
 		echo "Checking ip installation"
-		sudo ip -V #checking if user has ip
+		sudo ip -V # checking if user has ip
 		tmp_exit_code=$?
 		if [ $tmp_exit_code -eq 0 ]; then
 			echo "ip installation verified"
@@ -187,12 +184,12 @@ until [ $tmp_bool -eq 1 ]; do
 			fi
 		fi
 		if [[ ${wifi_arr[@]} =~ ${usr_interface_selection} ]]; then
-			#implement wifi ip grab
+			# implement wifi ip grab
 			pi_ip=$(sudo ip addr show wlan0 | grep -m 1 "inet" | cut -c 10-21)
 			echo -e "WiFi: $pi_ip \n"
 			sudo ip link set wlan0 promisc on
 		elif [[ ${eth_arr[@]} =~ ${usr_interface_selection} ]]; then
-			#implement eth0 ip grab 
+			# implement eth0 ip grab 
 			# NOTE: ETH IP grab not yet implemented because we're assuming a user w/ an out of the box system (Morgan correct me if i'm wrong!) and on my 
 			# pi, eth is "down" and not setup (not showing an ipv4 addr), thus it is TBD if we are going to set it up for them in this script, or just 
 			# tell them they need to go set it up
@@ -207,18 +204,17 @@ until [ $tmp_bool -eq 1 ]; do
 		tmp_bool=1 # to exit initial yes/no check
 		tmp_bool_inner=0 # to exit on users conformatino of their IP
 		until [ $tmp_bool_inner -eq 1 ]; do
-			#defining IP addr as an IPv4 addr. Confirming we have a valid IP
+			# defining IP addr as an IPv4 addr. Confirming we have a valid IP
 			read -p "Please provide your IP: " pi_ip
-			# TODO: dealing with a bug where the $pi_ip check is accepting IP addresses it shouldn't... 
-			#		it still accepts valid IPs so I'm not commenting it out. Just note it isn't stopping invalid IPs rgiht now :(
-			if [[ $pi_ip =~ [0-255\.0-255\.0-255\.0-255] ]]; then
+			# TODO: This validation merely checks that there are 4 numbers, separeted by three periods. to be improved.
+			if [[ $pi_ip =~ (^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$) ]]; then
 				#tmp_bool_inner=1
 				read -p "You said: $pi_ip is that right? [yes/no]: " usr_consent 
 				if [[ ${yes_arr[@]} =~ ${usr_consent} ]]; then
 					tmp_bool_inner=1
 					echo -e "IP: $pi_ip stored. \n"
 					continue
-				elif [[ ${no_arr[@] =~ ${usr_consent}} ]]; then	
+				elif [[ ${no_arr[@]} =~ ${usr_consent} ]]; then	
 					tmp_bool_inner=0
 					echo -e "Okay, lets try again...\n"
 				fi
@@ -248,7 +244,7 @@ if [ $tmp_exit_code -gt 0 ]; then
 	echo "IP was unable to be updated. Exit code: $tmp_exit_code"
 	exit 1
 else
-	echo "IP address has been updated in suricata.yaml!" #TODO: eventually (not necessary for the demo) we should probably put a check here for a valid IP such that I cant say my IP is "potato"
+	echo "IP address has been updated in suricata.yaml!"
 fi
 
 # Make sure that the rules file is up to date/the correct file path
@@ -421,7 +417,7 @@ until [ $tmp_bool -eq 1 ]; do
 		echo -e "\nYou entered $setup_choice, which is not a valid answer. Please try again: "
 		echo -e "\nWhat configuration type would you like to install?:"
 		echo "1: Intrusion Detection System (IDS) - Will alert but not block network traffic "
-		echo "2: Intrusion Prevention System (IPS) - Will alert and/or block network traffic ('advanced' mode)" #idk if we should table the IPS mode... y>
+		echo "2: Intrusion Prevention System (IPS) - Will alert and/or block network traffic ('advanced' mode)" 
 		echo "** NOTE: IPS Mode is only recommended for those who have a good understanding of computer networks **"
 		read -p "Enter your choice (# or abbreviation): " setup_choice
 	fi
