@@ -20,11 +20,14 @@ if [ $tmp_exit_code -gt 0 ]; then
 	echo "Suricata is not currently running. Please run the setup/configuration file."
 	break
 else
-
+	echo "Suricata is running!"
+	#sudo systemctl status suricata | grep 'Active: active (running)'
+fi
 # On the pcaps i've been testing with (ehich i'm making from recordign my own attacks on my pi) i'm getting a very low number of alerts... Maybe we
 # need to merge in some of those rulesets suricata-update provides, or make really specific ones to track exactly what we're looking for.
 
-#NOTE: the listed pcap files are not currently uploaded. Users must test w/ their own pcap files they pass the path too for the time being.
+#NOTE: Getting 0 alerts for the ARP and DHCP tests. There's an error in the ARP test: datalink type 127 not (yet) supported in module PcapFile.
+#	   Will investigate more later, had to run to work. I don't know if the files I grabbed are wise to use, I just grabbed what I thought seemed reasonable.
 
 # determining if user would like to run their own offline pcap test or use our default test
 tmp_bool=0
@@ -37,7 +40,7 @@ until [ $tmp_bool -eq 1 ]; do
 		if [ $usr_interface_selection == "yours" ]; then
 			echo -e "Okay, going with ours! \n"
 			# hardcoding these values (at least for now) as a quick baseline check for the user to see how their config stacks up to the (what should be) default suricata results
-			tcp_syn_flood_baseline_alert_num=0
+			tcp_syn_flood_baseline_alert_num=116819
 			port_scan_baseline_alert_num=0
 			arp_spoofing_baseline_alert_num=0
 			dhcp_attack_baseline_alert_num=0
@@ -46,62 +49,66 @@ until [ $tmp_bool -eq 1 ]; do
 
 			# TCP SYN FLOOD offline pcap test
 			echo "running TCP SYN FLOOD attack pcap"
-			sudo suricata -c /etc/suricata/suricata.yaml -r project-argus/suricata/test-pcap-files/tcp-syn-flood.pcap -l project-argus/suricata/temp-log-storage/
+			sudo suricata -c /etc/suricata/suricata.yaml -r suricata/test-pcaps/tcp_syn_attack_small.pcap -l suricata/temp-log-storage/
 			tmp_exit_code=$?
 
 			if [ $tmp_exit_code -gt 0 ]; then
 				echo "Failed to run PCAP file... Exit code: $tmp_exit_code"
 			else
 				echo "The TCP SYN flood attack .pcap was successfully run!"
-				# alerts=$(tail -n 2 project-argus/suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
-				alert_number=$(grep -o "Alerts: [0-9]\+" project-argus/suricata/temp-log-storage/suricata.log | tail -n 1)
+				# alerts=$(tail -n 2 suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
+				alert_number=$(grep -o "Alerts: [0-9]\+" suricata/temp-log-storage/suricata.log | tail -n 1)
 				echo "The number of alerts triggered:"
 				echo "    $alert_number"
-				echo -e "You should have got ~$tcp_syn_flood_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline) \n"
+				echo -e "You should have got ~$tcp_syn_flood_baseline_alert_num alerts."
+				echo -e " **NOTE:Depending on your rules you may have a different #. We hardcoded this # based on the default ruleset to act as a baseline."
+				echo -e " It is permissible to be within +/- ~15% of our # assuming a default configuration based on our setup script. \n"
+			fi
 
-					echo "running TCP SYN FLOOD attack pcap"
+			# Port scanning offline pcap test TODO: TO BE IMPLEMENTED OR REPLACED
+			#sudo suricata -c /etc/suricata/suricata.yaml -r suricata/test-pcap-files/port-scanning.pcap -l suricata/temp-log-storage/
+			#tmp_exit_code=$?
 
-			# Port scanning offline pcap test
-			sudo suricata -c /etc/suricata/suricata.yaml -r project-argus/suricata/test-pcap-files/port-scanning.pcap -l project-argus/suricata/temp-log-storage/
-			tmp_exit_code=$?
+			#if [ $tmp_exit_code -gt 0 ]; then
+				#echo "Failed to run PCAP file... Exit code: $tmp_exit_code"
+			#else
+				#echo "The port scanning attack .pcap was successfully run!"
+				# alerts=$(tail -n 2 suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
+				#alert_number=$(grep -o "Alerts: [0-9]\+" suricata/temp-log-storage/suricata.log | tail -n 1)
+				#echo "The number of alerts triggered:"
+				#echo "    $alert_number"
+				#echo -e "You should have got ~$port_scan_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline) \n"
+			#fi
 
-			if [ $tmp_exit_code -gt 0 ]; then
-				echo "Failed to run PCAP file... Exit code: $tmp_exit_code"
-			else
-				echo "The port scanning attack .pcap was successfully run!"
-				# alerts=$(tail -n 2 project-argus/suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
-				alert_number=$(grep -o "Alerts: [0-9]\+" project-argus/suricata/temp-log-storage/suricata.log | tail -n 1)
-				echo "The number of alerts triggered:"
-				echo "    $alert_number"
-				echo -e "You should have got ~$port_scan_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline) \n"
-		
 			# ARP spoofing offline pcap test
-			sudo suricata -c /etc/suricata/suricata.yaml -r project-argus/suricata/test-pcap-files/arp-spoofing.pcap -l project-argus/suricata/temp-log-storage/
+			sudo suricata -c /etc/suricata/suricata.yaml -r suricata/test-pcaps/arp_pcaps -l suricata/temp-log-storage/
 			tmp_exit_code=$?
 
 			if [ $tmp_exit_code -gt 0 ]; then
 				echo "Failed to run PCAP file... Exit code: $tmp_exit_code"
 			else
 				echo "The ARP spoofing attack .pcap was successfully run!"
-				# alerts=$(tail -n 2 project-argus/suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
-				alert_number=$(grep -o "Alerts: [0-9]\+" project-argus/suricata/temp-log-storage/suricata.log | tail -n 1)
+				# alerts=$(tail -n 2 suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
+				alert_number=$(grep -o "Alerts: [0-9]\+" suricata/temp-log-storage/suricata.log | tail -n 1)
 				echo "The number of alerts triggered:"
 				echo "    $alert_number"
 				echo -e "You should have got ~$arp_spoofing_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline) \n"
-		
+			fi
+
 			# DHCP attack offline pcap test
-			sudo suricata -c /etc/suricata/suricata.yaml -r project-argus/suricata/test-pcap-files/dhcp-attack.pcap -l project-argus/suricata/temp-log-storage/
+			sudo suricata -c /etc/suricata/suricata.yaml -r suricata/test-pcaps/dhcp_pcaps -l suricata/temp-log-storage/
 			tmp_exit_code=$?
 
 			if [ $tmp_exit_code -gt 0 ]; then
 				echo "Failed to run PCAP file... Exit code: $tmp_exit_code"
 			else
 				echo "The DHCP attack .pcap was successfully run!"
-				# alerts=$(tail -n 2 project-argus/suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
-				alert_number=$(grep -o "Alerts: [0-9]\+" project-argus/suricata/temp-log-storage/suricata.log | tail -n 1)
+				# alerts=$(tail -n 2 suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
+				alert_number=$(grep -o "Alerts: [0-9]\+" suricata/temp-log-storage/suricata.log | tail -n 1)
 				echo "The number of alerts triggered:"
 				echo "    $alert_number"
 				echo -e "You should have got ~$dhcp_attack_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline) \n"
+			fi
 		
 			# Test complete, summarize to user
 			echo -e "Test complete! \n"
@@ -112,8 +119,9 @@ until [ $tmp_bool -eq 1 ]; do
 			else
 				alert_dif=$($alert_dif * -1)
 				echo -e "You generated $alert_dif less alerts than our baseline!"
+			fi
 		
-		elif [ $usr_interface_selection == "mine" ]; then
+		elif [[ $usr_interface_selection == "mine" ]]; then
 			echo -e "Okay, going with yours! Be prepared to provide the path of the pcaps on your system \n"
 			echo "Checking if Suricata is running..."
 			sudo systemctl status suricata | grep 'Active: active (running)'
@@ -127,15 +135,15 @@ until [ $tmp_bool -eq 1 ]; do
 				# Get the location of the file to be run/inspected
 				read -p "What is the file path of the PCAP file?: " pcap_loc
 
-				sudo suricata -c /etc/suricata/suricata.yaml -r $pcap_loc -l project-argus/suricata/temp-log-storage/
+				sudo suricata -c /etc/suricata/suricata.yaml -r $pcap_loc -l suricata/temp-log-storage/
 				tmp_exit_code=$?
 
 				if [ $tmp_exit_code -gt 0 ]; then
 					echo "Failed to run PCAP file... Exit code: $tmp_exit_code"
 				else
 					echo "The PCAP file was successfully run!"
-					# alerts=$(tail -n 2 project-argus/suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
-					alert_number=$(grep -o "Alerts: [0-9]\+" project-argus/suricata/temp-log-storage/suricata.log | tail -n 1)
+					# alerts=$(tail -n 2 suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
+					alert_number=$(grep -o "Alerts: [0-9]\+" suricata/temp-log-storage/suricata.log | tail -n 1)
 					echo "The number of alerts triggered:"
 					echo "    $alert_number"
 					echo "For the full log, refer to suricata.log"
