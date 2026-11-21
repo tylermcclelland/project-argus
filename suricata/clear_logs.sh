@@ -23,7 +23,16 @@ sudo rm /var/log/suricata/eve.json
 sudo rm /var/log/suricata/stats.log
 sudo rm /var/log/suricata/suricata.log
 
-echo -e "Logs have been cleared.\n"
+echo -e "Logs have been cleared from the Suricata logs.\n"
+
+echo "Clearing logs from project-argus/suricata/temp-log-storage/..."
+
+sudo rm suricata/temp-log-storage/fast.log
+sudo rm suricata/temp-log-storage/eve.json
+sudo rm suricata/temp-log-storage/stats.log
+sudo rm suricata/temp-log-storage/suricata.log
+
+echo -e "Logs have been cleared in the Project Argus temp-log-storage.\n"
 
 echo "Starting Suricata..."
 
