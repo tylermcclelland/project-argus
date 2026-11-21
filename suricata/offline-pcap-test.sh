@@ -29,6 +29,9 @@ fi
 #NOTE: Getting 0 alerts for the ARP and DHCP tests. There's an error in the ARP test: datalink type 127 not (yet) supported in module PcapFile.
 #	   Will investigate more later, had to run to work. I don't know if the files I grabbed are wise to use, I just grabbed what I thought seemed reasonable.
 
+usr_total_alerts=0
+baseline_total_alerts=0
+
 # determining if user would like to run their own offline pcap test or use our default test
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
@@ -45,6 +48,11 @@ until [ $tmp_bool -eq 1 ]; do
 			arp_spoofing_baseline_alert_num=0
 			dhcp_attack_baseline_alert_num=0
 
+			((baseline_total_alerts += tcp_syn_flood_baseline_alert_num))
+			((baseline_total_alerts += port_scan_baseline_alert_num))
+			((baseline_total_alerts += arp_spoofing_baseline_alert_num))
+			((baseline_total_alerts += dhcp_attack_baseline_alert))
+
 			echo -e "Starting tests... \n"
 
 			# TCP SYN FLOOD offline pcap test
@@ -57,12 +65,13 @@ until [ $tmp_bool -eq 1 ]; do
 			else
 				echo "The TCP SYN flood attack .pcap was successfully run!"
 				# alerts=$(tail -n 2 suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
-				alert_number=$(grep -o "Alerts: [0-9]\+" suricata/temp-log-storage/suricata.log | tail -n 1)
+				alert_number=$(grep -oP "Alerts: \K[0-9]+" suricata/temp-log-storage/suricata.log | tail -n 1)
 				echo "The number of alerts triggered:"
 				echo "    $alert_number"
 				echo -e "You should have got ~$tcp_syn_flood_baseline_alert_num alerts."
 				echo -e " **NOTE:Depending on your rules you may have a different #. We hardcoded this # based on the default ruleset to act as a baseline."
 				echo -e " It is permissible to be within +/- ~15% of our # assuming a default configuration based on our setup script. \n"
+				((usr_total_alerts += alert_number))
 			fi
 
 			# Port scanning offline pcap test TODO: TO BE IMPLEMENTED OR REPLACED
@@ -89,10 +98,11 @@ until [ $tmp_bool -eq 1 ]; do
 			else
 				echo "The ARP spoofing attack .pcap was successfully run!"
 				# alerts=$(tail -n 2 suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
-				alert_number=$(grep -o "Alerts: [0-9]\+" suricata/temp-log-storage/suricata.log | tail -n 1)
+				alert_number=$(grep -oP "Alerts: \K[0-9]+" suricata/temp-log-storage/suricata.log | tail -n 1)
 				echo "The number of alerts triggered:"
 				echo "    $alert_number"
 				echo -e "You should have got ~$arp_spoofing_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline) \n"
+				((usr_total_alerts += alert_number))
 			fi
 
 			# DHCP attack offline pcap test
@@ -104,20 +114,23 @@ until [ $tmp_bool -eq 1 ]; do
 			else
 				echo "The DHCP attack .pcap was successfully run!"
 				# alerts=$(tail -n 2 suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
-				alert_number=$(grep -o "Alerts: [0-9]\+" suricata/temp-log-storage/suricata.log | tail -n 1)
+				alert_number=$(grep -oP "Alerts: \K[0-9]+" suricata/temp-log-storage/suricata.log | tail -n 1)
 				echo "The number of alerts triggered:"
 				echo "    $alert_number"
 				echo -e "You should have got ~$dhcp_attack_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline) \n"
+				((usr_total_alerts += alert_number))
 			fi
 		
 			# Test complete, summarize to user
 			echo -e "Test complete! \n"
 			echo -e "In total, your config generated $usr_total_alerts alerts. Our baseline config generates $baseline_total_alerts."
-			alert_dif=$($usr_total_alerts - $baseline_total_alerts)
-			if [ alert_dif -gt 0 ]; then
+			alert_dif=$((usr_total_alerts - baseline_total_alerts))
+			if [ $alert_dif -gt 0 ]; then
 				echo -e "You generated $alert_dif more alerts than our baseline! "
+			elif [ $alert_dif -eq 0 ]; then
+				echo -e "You generated the same number of alerts as our baseline! "
 			else
-				alert_dif=$($alert_dif * -1)
+				alert_dif=$((alert_dif * -1))
 				echo -e "You generated $alert_dif less alerts than our baseline!"
 			fi
 		
