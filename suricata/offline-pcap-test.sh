@@ -9,6 +9,11 @@
 # is run prior to this to ensure the tool is installed, up to date,
 # and configured as needed.
 
+# arrays to store valid inputs
+# NOTE: defining default to 1 and custom to 2
+default_arr=({d,D}{e,E}{f,F}{a,A}{u,U}{l,L}{t,T} {o,O}{u,U}{r,R}{s,S} d D 1)
+custom_arr=({c,C}{u,U}{s,S}{t,T}{o,O}{m,M} {y,Y}{o,O}{u,U}{r,R}{s,S} c C 2)
+
 echo "Running the offline-pcap-test file..."
 
 echo "Checking if Suricata is running..."
@@ -36,22 +41,26 @@ baseline_total_alerts=0
 tmp_bool=0
 until [ $tmp_bool -eq 1 ]; do
 	#TODO: quick fix, find out how to grab selection withou tbeing case sensitive
-	echo "Would you like to run our default tests (that check if Suricata is running as expected), or do you have your own pcaps you want to test? [yours/mine]"
+	echo "Would you like to run our default tests (that check if Suricata is running as expected), or do you have your own pcaps you want to test?"
+	echo "1. default / ours (most common)"
+	echo "2. custom / yours"
 	read usr_interface_selection
-	if [[ $usr_interface_selection == "yours" || $usr_interface_selection == "mine" ]]; then
+	if [[ ${default_arr[@]} =~ ${usr_interface_selection} || ${custom_arr[@]} =~ ${usr_interface_selection} ]]; then
 		tmp_bool=1
-		if [ $usr_interface_selection == "yours" ]; then
+		if [[ ${default_arr[@]} =~ ${usr_interface_selection} ]]; then
 			echo -e "Okay, going with ours! \n"
 			# hardcoding these values (at least for now) as a quick baseline check for the user to see how their config stacks up to the (what should be) default suricata results
 			tcp_syn_flood_baseline_alert_num=116819
 			port_scan_baseline_alert_num=0
 			arp_spoofing_baseline_alert_num=0
 			dhcp_attack_baseline_alert_num=0
+			dns_attack_baseline_alert_num=0
 
 			((baseline_total_alerts += tcp_syn_flood_baseline_alert_num))
 			((baseline_total_alerts += port_scan_baseline_alert_num))
 			((baseline_total_alerts += arp_spoofing_baseline_alert_num))
-			((baseline_total_alerts += dhcp_attack_baseline_alert))
+			((baseline_total_alerts += dhcp_attack_baseline_alert_num))
+			((baseline_total_alerts += dns_attack_baseline_alert_num))
 
 			echo -e "Starting tests... \n"
 
@@ -90,7 +99,7 @@ until [ $tmp_bool -eq 1 ]; do
 			#fi
 
 			# ARP spoofing offline pcap test
-			sudo suricata -c /etc/suricata/suricata.yaml -r suricata/test-pcaps/arp_pcaps -l suricata/temp-log-storage/
+			sudo suricata -c /etc/suricata/suricata.yaml -r suricata/test-pcaps/daniel_johnny_arp_before_after.pcap -l suricata/temp-log-storage/
 			tmp_exit_code=$?
 
 			if [ $tmp_exit_code -gt 0 ]; then
@@ -120,7 +129,22 @@ until [ $tmp_bool -eq 1 ]; do
 				echo -e "You should have got ~$dhcp_attack_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline) \n"
 				((usr_total_alerts += alert_number))
 			fi
-		
+
+			# DNS attack offline pcap test
+			sudo suricata -c /etc/suricata/suricata.yaml -r suricata/test-pcaps/daniel_johnny_kaminsky_dns.pcap -l suricata/temp-log-storage/
+			tmp_exit_code=$?
+
+			if [ $tmp_exit_code -gt 0 ]; then
+				echo "Failed to run the DNS attack PCAP file...Exit code: $tmp_exit_code"
+			else
+				echo "The DNS attack .pcap was successfully run!"
+				alert_number=$(grep -oP "Alerts: \K[0-9]+" suricata/temp-log-storage/suricata.log | tail -n 1)
+				echo "The number of alerts triggered:"
+				echo "    $alert_number"
+				echo -e "You should have got ~dns_attack_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline.)"
+				((usr_total_alerts += alert_number))
+			fi
+
 			# Test complete, summarize to user
 			echo -e "Test complete! \n"
 			echo -e "In total, your config generated $usr_total_alerts alerts. Our baseline config generates $baseline_total_alerts."
@@ -133,8 +157,8 @@ until [ $tmp_bool -eq 1 ]; do
 				alert_dif=$((alert_dif * -1))
 				echo -e "You generated $alert_dif less alerts than our baseline!"
 			fi
-		
-		elif [[ $usr_interface_selection == "mine" ]]; then
+
+		elif [[  ${custom_arr[@]} =~ ${usr_interface_selection} ]]; then
 			echo -e "Okay, going with yours! Be prepared to provide the path of the pcaps on your system \n"
 			echo "Checking if Suricata is running..."
 			sudo systemctl status suricata | grep 'Active: active (running)'
@@ -166,6 +190,6 @@ until [ $tmp_bool -eq 1 ]; do
 
 	else
 		echo "You said: $usr_interface_selection. This is not a valid option."
-		echo -e "You must type \"yours\" or \"mine\". Trying again... \n"
+		echo -e "You must type 'default'/'ours' or 'custom'/'yours'. Trying again... \n"
 	fi
 done
