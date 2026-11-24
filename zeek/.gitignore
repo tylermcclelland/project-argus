@@ -1,0 +1,5 @@
+# Generated files. Run ./download-samples.sh to get the sample pcaps.
+logs/*
+!logs/.gitkeep
+pcaps/*
+!pcaps/.gitkeep

@@ -1,0 +1,8 @@
+# Starts both tools. Run from this folder:
+#   docker compose up -d --build    start (or rebuild after changes)
+#   docker compose down             stop
+name: argus
+
+include:
+  - zeek/docker-compose.yml
+  - suricata/docker-compose.yml

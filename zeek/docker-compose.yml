@@ -1,0 +1,27 @@
+name: argus
+
+services:
+  zeek:
+    build: .
+    image: zeek-lab:latest
+    container_name: zeek
+    hostname: zeek
+
+    # Use the host's network so Zeek can see the real interfaces (eth0, lo, ...).
+    network_mode: host
+
+    # Allow packet capture and raw scans.
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+
+    # Host folder : container folder
+    volumes:
+      - ./pcaps:/pcaps
+      - ./logs:/logs
+      - ./scripts:/scripts
+      - ./scripts/local.zeek:/usr/local/zeek/share/zeek/site/local.zeek:ro
+
+    # Keep the container running so we can use "docker exec".
+    command: sleep infinity
+    restart: unless-stopped

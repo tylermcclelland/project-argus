@@ -1,0 +1,31 @@
+##! Main Zeek settings. Zeek loads this file when you pass "local" on the command line.
+
+# Zeek's default recommended scripts.
+redef digest_salt = "zeek-lab-change-me";
+
+@load misc/loaded-scripts
+@load misc/capture-loss
+@load misc/stats
+@load frameworks/software/vulnerable
+@load frameworks/software/version-changes
+@load-sigs frameworks/signatures/detect-windows-shells
+@load protocols/ftp/software
+@load protocols/smtp/software
+@load protocols/ssh/software
+@load protocols/http/software
+@load protocols/dns/detect-external-names
+@load protocols/ftp/detect
+@load protocols/conn/known-hosts
+@load protocols/conn/known-services
+@load protocols/ssl/known-certs
+@load protocols/ssl/validate-certs
+@load protocols/ssl/log-hostcerts-only
+@load protocols/ssh/geo-data
+@load protocols/ssh/detect-bruteforcing
+@load protocols/ssh/interesting-hostnames
+@load protocols/http/detect-sql-injection
+@load frameworks/files/hash-all-files
+@load policy/frameworks/notice/extend-email/hostnames
+
+# Custom detections.
+@load /scripts/detections

@@ -1,0 +1,34 @@
+name: argus
+
+services:
+  suricata:
+    build: .
+    image: argus-suricata:latest
+    container_name: suricata
+    hostname: suricata
+
+    # Use the host's network so Suricata can see the real interfaces (eth0, wlan0, ...).
+    network_mode: host
+
+    # Allow packet capture. SYS_NICE lets Suricata pin threads to CPU cores.
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+      - SYS_NICE
+
+    # SURICATA_IFACE (interface to watch) and optional HOME_NET. Created by install.sh.
+    env_file:
+      - path: .env
+        required: false
+
+    # Host folder : container folder
+    volumes:
+      - ./pcaps:/pcaps
+      - ./logs:/logs
+      - ./rules:/custom-rules:ro
+      - suricata-data:/var/lib/suricata   # downloaded rules
+
+    restart: unless-stopped
+
+volumes:
+  suricata-data:
