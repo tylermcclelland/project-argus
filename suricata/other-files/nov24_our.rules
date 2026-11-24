@@ -1,0 +1,11 @@
+# rules crafted based on what is defined here: https://docs.suricata.io/en/suricata-7.0.11/rules/index.html
+# for suricata version 7.0.10
+
+# Morgan's
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg: "WARNING: Possible SYN Flood detected!";  flow:stateless,to_client; flags:S; classtype:attempted-dos; priority:1; target:[src_ip|dest_ip]; sid:123; rev:1;)
+
+# Tyler's
+#alert tcp any any -> $HOME_NET any (msg:"Potential Port Scan Detected"; priority:1; target:[src_ip|dest_ip] flow:to_server; flags:S,12; threshold:type both, track by_src, count 5, seconds 5; sid:44; rev:1;)
+alert tcp any any -> $HOME_NET any (msg:"Potential Port Scan Detected"; priority:1; flow:to_server; flags:S,12; threshold:type both, track by_src, count 5, seconds 5; sid:44; rev:1;)
+#alert tcp any any -> any any (msg:"Potential Port Scan Detected"; priority:1; flow:to_server; flags:S,12; classtype:attempted-recon; threshold:type threshold, track by_src, count 1, seconds 20; sid:44; rev:1;)
+#alert tcp any any -> 192.168.0.83 any (msg:"Can i see something..."; priority:1; sid:1; rev:1;)
