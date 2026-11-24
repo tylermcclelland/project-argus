@@ -7,7 +7,7 @@ alert tcp any any -> $HOME_NET any (msg: "WARNING: Possible DoS attack - SYN Flo
 # show all queries as a test
 # alert dns any any -> any any (msg:"DNS QUERY test"; dns.query; content:"mr-miyagi.com"; sid:120; rev:1;)
 # content:"." filters for most domain names
-alert dns any any -> any any (msg:"WARNING: Possible DNS Query Flood (5+ cases detected)"; dns.query; content:"."; threshold:type threshold, track by_src, count 5, seconds 1; classtype:attempted-recon; sid:120; rev:3;)
+alert dns any any -> any any (msg:"WARNING: Possible DDoS attack - DNS Query Flood"; dns.query; content:"."; threshold:type threshold, track by_src, count 5, seconds 1; classtype:denial-of-service; sid:120; rev:3;)
 
 # Tyler's
 #alert tcp any any -> $HOME_NET any (msg:"Potential Port Scan Detected"; priority:1; target:[src_ip|dest_ip] flow:to_server; flags:S,12; threshold:type both, track by_src, count 5, seconds 5; sid:44; rev:1;)
