@@ -54,7 +54,7 @@ until [ $tmp_bool -eq 1 ]; do
 			port_scan_baseline_alert_num=0
 			arp_spoofing_baseline_alert_num=0
 			dhcp_attack_baseline_alert_num=0
-			dns_attack_baseline_alert_num=0
+			dns_attack_baseline_alert_num=28
 
 			((baseline_total_alerts += tcp_syn_flood_baseline_alert_num))
 			((baseline_total_alerts += port_scan_baseline_alert_num))
@@ -65,7 +65,7 @@ until [ $tmp_bool -eq 1 ]; do
 			echo -e "Starting tests... \n"
 
 			# TCP SYN FLOOD offline pcap test
-			echo "running TCP SYN FLOOD attack pcap"
+			echo "Running the TCP SYN FLOOD attack offline PCAP test..."
 			sudo suricata -c /etc/suricata/suricata.yaml -r suricata/test-pcaps/tcp_syn_attack_small.pcap -l suricata/temp-log-storage/
 			tmp_exit_code=$?
 
@@ -99,22 +99,24 @@ until [ $tmp_bool -eq 1 ]; do
 			#fi
 
 			# ARP spoofing offline pcap test
-			sudo suricata -c /etc/suricata/suricata.yaml -r suricata/test-pcaps/daniel_johnny_arp_before_after.pcap -l suricata/temp-log-storage/
-			tmp_exit_code=$?
+			# ARP spoofing currently not supported in Suricata 7.0.10 - Zeek needed to detect anomalies
+			# sudo suricata -c /etc/suricata/suricata.yaml -r suricata/test-pcaps/daniel_johnny_arp_before_after.pcap -l suricata/temp-log-storage/
+			# tmp_exit_code=$?
 
-			if [ $tmp_exit_code -gt 0 ]; then
-				echo "Failed to run PCAP file... Exit code: $tmp_exit_code"
-			else
-				echo "The ARP spoofing attack .pcap was successfully run!"
-				# alerts=$(tail -n 2 suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
-				alert_number=$(grep -oP "Alerts: \K[0-9]+" suricata/temp-log-storage/suricata.log | tail -n 1)
-				echo "The number of alerts triggered:"
-				echo "    $alert_number"
-				echo -e "You should have got ~$arp_spoofing_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline) \n"
-				((usr_total_alerts += alert_number))
-			fi
+			# if [ $tmp_exit_code -gt 0 ]; then
+			#	 echo "Failed to run PCAP file... Exit code: $tmp_exit_code"
+			# else
+			#	echo "The ARP spoofing attack .pcap was successfully run!"
+			#	# alerts=$(tail -n 2 suricata/test-pcap-files/temp-log-storage/suricata.log | head -n 1)
+			#	alert_number=$(grep -oP "Alerts: \K[0-9]+" suricata/temp-log-storage/suricata.log | tail -n 1)
+			#	echo "The number of alerts triggered:"
+			#	echo "    $alert_number"
+			#	echo -e "You should have got ~$arp_spoofing_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline) \n"
+			#	((usr_total_alerts += alert_number))
+			# fi
 
 			# DHCP attack offline pcap test
+			echo "Running the DHCP offline PCAP test..."
 			sudo suricata -c /etc/suricata/suricata.yaml -r suricata/test-pcaps/dhcp_pcaps -l suricata/temp-log-storage/
 			tmp_exit_code=$?
 
@@ -131,6 +133,7 @@ until [ $tmp_bool -eq 1 ]; do
 			fi
 
 			# DNS attack offline pcap test
+			echo "Running the DNS attack PCAP file..."
 			sudo suricata -c /etc/suricata/suricata.yaml -r suricata/test-pcaps/daniel_johnny_kaminsky_dns.pcap -l suricata/temp-log-storage/
 			tmp_exit_code=$?
 
@@ -141,7 +144,7 @@ until [ $tmp_bool -eq 1 ]; do
 				alert_number=$(grep -oP "Alerts: \K[0-9]+" suricata/temp-log-storage/suricata.log | tail -n 1)
 				echo "The number of alerts triggered:"
 				echo "    $alert_number"
-				echo -e "You should have got ~dns_attack_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline.)"
+				echo -e "You should have got ~$dns_attack_baseline_alert_num alerts. (depending on your rules. We hardcoded this # based on the default ruleset to act as a baseline.)"
 				((usr_total_alerts += alert_number))
 			fi
 
