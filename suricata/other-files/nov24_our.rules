@@ -2,7 +2,7 @@
 # for suricata version 7.0.10
 
 # Morgan's
-alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg: "WARNING: Possible SYN Flood detected!";  flow:stateless,to_client; flags:S; classtype:attempted-dos; priority:1; target:[src_ip|dest_ip]; sid:123; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg: "WARNING: Possible DoS attack - SYN Flood detected!"; flow:stateless; flags:S,12; threshold:type both, track by_src, count 5, seconds 5; classtype:attempted-dos; priority:1; sid:123; rev:2;)
 
 # Tyler's
 #alert tcp any any -> $HOME_NET any (msg:"Potential Port Scan Detected"; priority:1; target:[src_ip|dest_ip] flow:to_server; flags:S,12; threshold:type both, track by_src, count 5, seconds 5; sid:44; rev:1;)
