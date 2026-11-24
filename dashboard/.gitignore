@@ -1,0 +1,23 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables / credentials
+.env
+.venv/
+venv/
+
+# Local databases and large test data
+*.db
+*.sqlite
+*.sqlite3
+*.zip
+eve.json
+zeek_logs/
+
+# VS Code
+.vscode/
+
+# Operating system files
+.DS_Store
+Thumbs.db
